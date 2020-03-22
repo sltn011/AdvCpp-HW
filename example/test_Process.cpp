@@ -1,25 +1,41 @@
 #include "Process.h"
 
-enum { BUF_SIZE = 100 };
+constexpr int BUF_SIZE = 100;
 
 int main(int argc, char *argv[]) {
-    Process proc("./func", argv);
-    
-    char msg_rec[BUF_SIZE];
-    int t = proc.read(msg_rec, BUF_SIZE - 1);
-    std::cout << "Read " << t << std::endl;
-    msg_rec[t] = '\0';
-    std::cout << "Parent recieved " << msg_rec << std::endl;
 
-    char msg_sent[] = "Hello, child!";
+    if (argv[1] == nullptr) {
+        std::cerr << "First argument must be process path!" << std::endl;
+        return 1;
+    }
+
+    std::string path = argv[1];
+    std::vector<std::string> procArgs;
+    char **ptr = argv + 2;
+    while (*ptr) {
+        procArgs.push_back(std::string(*ptr));
+        ++ptr;
+    }
+
+    HW::Process proc(path, procArgs);
+    
+    std::string message;
+    message.resize(BUF_SIZE);
+    size_t t = proc.read(message.data(), BUF_SIZE);
+    std::cout << "Read " << t << std::endl;
+    message.resize(t);
+    std::cout << "Parent recieved " << message << std::endl;
+
+    message = "Hello, child!";
     std::cout << "Sending message to child" << std::endl;
-    t = proc.write(msg_sent, strlen(msg_sent) + 1);
+    t = proc.write(message.c_str(), message.size() + 1);
     std::cout << "Wrote " << t << std::endl;
 
-    t = proc.read(msg_rec, BUF_SIZE - 1);
+    message.resize(BUF_SIZE);
+    t = proc.read(message.data(), BUF_SIZE);
     std::cout << "Read " << t << std::endl;
-    msg_rec[t] = '\0';
-    std::cout << "Parent recieved " << msg_rec << std::endl;
+    message.resize(t);
+    std::cout << "Parent recieved " << message << std::endl;
 
     return 0;
 }

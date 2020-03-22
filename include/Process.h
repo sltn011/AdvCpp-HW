@@ -1,69 +1,70 @@
-#ifndef PROCESS_H
-#define PROCESS_H
+#ifndef HW_PROCESS_H
+#define HW_PROCESS_H
 
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <iostream>
+#include <vector>
 #include <string>
-#include <string.h>
 #include <stdint.h>
-#include <stdexcept>
+#include "Descriptor.h"
+#include "Exceptions.h"
 
-class Process
-{
-private:
-    // Идентификатор процесса
-    pid_t pid;
+namespace HW {
 
-    // Расположение вызванного процесса в системе
-    std::string path;
+    class Process
+    {
+    private:
+        // Идентификатор процесса
+        pid_t pid;
 
-    // Дескрипторы для передачи данных в процесс
-    int pipe_in[2];
+        // Расположение вызванного процесса в системе
+        std::string path;
 
-    // Дескрипторы для получения данных из процесса
-    int pipe_out[2];
+        // Дескриптор для передачи данных в процесс
+        Descriptor fd_in;
 
-    // Открыт ли поток вывода из процесса
-    bool readableFrom;
+        // Дескриптор для получения данных из процесса
+        Descriptor fd_out;
 
-    // Открыт ли поток передачи в процесс
-    bool writeableTo;
+    public:
+        Process(const std::string& procPath, std::vector<std::string> & argv);
+        ~Process() noexcept;
 
-public:
-    explicit Process(const std::string& path, char *argv[]);
-    ~Process();
-
-    // Передача данных в процесс
-    size_t write(const void* data, size_t len);
-    void writeExact(const void* data, size_t len);
+        // Передача данных в процесс
+        size_t write(const void* data, size_t len);
+        void writeExact(const void* data, size_t len);
     
-    // Считывание данных из процесса
-    size_t read(void* data, size_t len);
-    void readExact(void* data, size_t len);
+        // Считывание данных из процесса
+        size_t read(void* data, size_t len);
+        void readExact(void* data, size_t len);
     
-    // Открыт ли поток вывода из процесса
-    bool isReadable() const;
+        // Открыт ли поток вывода из процесса
+        bool isReadable() const noexcept;
 
-    // Открыт ли поток передачи в процесс
-    bool isWritable() const;
+        // Открыт ли поток передачи в процесс
+        bool isWritable() const noexcept;
 
-    // Закрытие потока передачи в процесс
-    void closeStdin();
+        // Закрытие потока передачи в процесс
+        void closeStdin();
 
-    // Закрытие потоков обмена данными с процессом
-    void close();
+        // Закрытие потоков обмена данными с процессом
+        void close();
 
-    // Завершение процесса 
-    void abort();
+        // Завершение процесса 
+        void abort();
 
-    // PID процесса
-    int getPID() const;
+        // PID процесса
+        int getPID() const noexcept;
 
-    // Имя процесса в системе
-    std::string procName() const;
-};
+        // Имя процесса в системе
+        std::string procName() const noexcept;
+    };
 
-#endif // PROCESS_H
+} // HW
+
+
+
+#endif // HW_PROCESS_H

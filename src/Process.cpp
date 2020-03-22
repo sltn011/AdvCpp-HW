@@ -1,38 +1,49 @@
 #include "Process.h"
 
-Process::Process(const std::string & path, char *argv[]) {
-    this->path = path;
+HW::Process::Process(const std::string & procPath, std::vector<std::string> & argv) {
+    path = procPath;
+    int pipe_in[2], pipe_out[2];
 
     if (pipe(pipe_in) < 0) {
-        throw std::runtime_error("Failed to create pipe_in!");
+        throw HW::DescriptorError("Failed to create pipe to process!");
     }
-    writeableTo = true;
 
     if (pipe(pipe_out) < 0) {
-        throw std::runtime_error("Failed to create pipe_out!");
+        throw HW::DescriptorError("Failed to create pipe out of process!");
     }
-    readableFrom = true;
 
     pid = fork();
     if (pid < 0) {
-        throw std::runtime_error("Failed to create process!");
+        throw HW::ProcessError("Failed to create process!");
     } else if (!pid) {
         if (dup2(pipe_in[0], STDIN_FILENO) < 0) {
-            throw std::runtime_error("Failed to duplicate file descriptor in!");
+            throw HW::DescriptorError("Failed to duplicate file descriptor in!");
         }
         if (dup2(pipe_out[1], STDOUT_FILENO) < 0) {
-            throw std::runtime_error("Failed to duplicate file descriptor out!");
+            throw HW::DescriptorError("Failed to duplicate file descriptor out!");
         }
         ::close(pipe_in[1]);
         ::close(pipe_out[0]);
-        execvp(path.c_str(), argv);
+
+        std::vector<char*> procArgs;
+        procArgs.push_back(const_cast<char*>(path.c_str()));
+        for (size_t i = 0; i < argv.size(); ++i) {
+            procArgs.push_back(const_cast<char*>(argv[i].c_str()));
+        }
+        procArgs.push_back(nullptr);
+
+       if (execvp(path.c_str(), procArgs.data()) < 0) {
+           throw HW::ProcessError("Failed to launch process " + path);
+       }
     } else {
         ::close(pipe_in[0]);
         ::close(pipe_out[1]);
+        fd_in.setFD(pipe_in[1]);
+        fd_out.setFD(pipe_out[0]);
     }
 }
 
-Process::~Process() {
+HW::Process::~Process() noexcept {
     if (pid) {
         if (wait(nullptr) < 0) {
             std::cerr << "Some error happened" << std::endl;
@@ -40,74 +51,101 @@ Process::~Process() {
     }
 }
 
-void Process::abort() {
+void HW::Process::abort() {
     if (pid) {
-        kill(pid, SIGKILL);
+        kill(pid, SIGTERM);
     }
 }
 
-size_t Process::write(const void* data, size_t len) {
-    if (!writeableTo) {
+size_t HW::Process::write(const void* data, size_t len) {
+    if (!isWritable()) {
         return 0;
-    } else return ::write(pipe_in[1], data, len);
+    }
+    ssize_t written = ::write(fd_in.getFD(), data, len);
+    if (written < 0) {
+        throw HW::IOError("Error writing to process!");
+    } else {
+        return static_cast<size_t>(written);
+    }
 }
 
-void Process::writeExact(const void* data, size_t len) {
-    if (!writeableTo) {
-        throw std::runtime_error("Write stream is closed!");
+void HW::Process::writeExact(const void* data, size_t len) {
+    if (!isWritable()) {
+        throw HW::DescriptorError("Write stream is closed!");
     }
-    for (size_t i = 0; i < len; ++i) {
-        if (::write(pipe_in[1], static_cast<const uint8_t*>(data) + i, 1) != 1) {
-            --i;
+    ssize_t written = ::write(fd_in.getFD(), data, len);
+    if (written < 0) {
+        throw HW::IOError("Error writing to process!");
+    }
+    size_t i = static_cast<size_t>(written);
+    while(i != len) {
+        ssize_t ret = ::write(fd_in.getFD(), static_cast<const uint8_t*>(data) + i, len - i);
+        if (ret < 0) {
+            throw HW::IOError("Error writing to process!");
+        } else {
+            i += ret;
         }
     }
 }
 
-size_t Process::read(void* data, size_t len) {
-    if (!readableFrom) {
+size_t HW::Process::read(void* data, size_t len) {
+    if (!isReadable()) {
         return 0;
-    } else return ::read(pipe_out[0], data, len);
+    }
+    ssize_t recieved = ::read(fd_out.getFD(), data, len);
+    if (recieved < 0) {
+        throw HW::IOError("Error reading from process!");
+    } else {
+        return static_cast<size_t>(recieved);
+    }
 }
 
-void Process::readExact(void* data, size_t len) {
-    if (!readableFrom) {
-        throw std::runtime_error("Read stream is closed!");
+void HW::Process::readExact(void* data, size_t len) {
+    if (!isReadable()) {
+        throw HW::DescriptorError("Read stream is closed!");
     } 
-    for (size_t i = 0; i < len; ++i) {
-        if (::read(pipe_out[0], static_cast<uint8_t*>(data) + i, 1) != 1) {
-            --i;
+    ssize_t recieved = ::read(fd_out.getFD(), data, len);
+    if (recieved < 0) {
+        throw HW::IOError("Error reading from process!");
+    }
+    size_t i = static_cast<size_t>(recieved);
+    while (i != len) {
+        ssize_t ret = ::read(fd_out.getFD(), static_cast<uint8_t*>(data) + i, len - i);
+        if (ret < 0) {
+            throw HW::IOError("Error reading from process!");
+        } else if (ret == 0) {
+            throw HW::IOError("End of file reached before reading requested number of bytes");
+        } else {
+            i += ret;
         }
     }
 }
 
-bool Process::isReadable() const {
-    return readableFrom;
+bool HW::Process::isReadable() const noexcept {
+    return fd_out.isOpened();
 }
 
-bool Process::isWritable() const {
-    return writeableTo;
+bool HW::Process::isWritable() const noexcept {
+    return fd_in.isOpened();
 }
 
-void Process::closeStdin() {
-    ::close(pipe_in[1]);
-    writeableTo = false;
+void HW::Process::closeStdin() {
+    fd_in.close();
 }
 
-void Process::close() {
-    if (writeableTo) {
-        ::close(pipe_in[1]);
-        writeableTo = false;
+void HW::Process::close() {
+    if (isWritable()) {
+        fd_in.close();
     }
-    if (readableFrom) {
-        ::close(pipe_out[0]);
-        readableFrom = false;
+    if (isReadable()) {
+        fd_out.close();
     }
 }
 
-int Process::getPID() const {
+int HW::Process::getPID() const noexcept {
     return pid;
 }
 
-std::string Process::procName() const {
+std::string HW::Process::procName() const noexcept {
     return path;
 }
