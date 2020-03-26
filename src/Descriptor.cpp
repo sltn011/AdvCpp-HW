@@ -7,12 +7,9 @@ HW::Descriptor::Data::~Data() noexcept {
 }
 
 
+HW::Descriptor::Descriptor() {}
 
-HW::Descriptor::Descriptor() : pData{nullptr} {}
-
-HW::Descriptor::Descriptor(const int fd) : pData{nullptr} {
-    pData = std::make_shared<Data>(fd);
-}
+HW::Descriptor::Descriptor(const int fd) : pData{std::make_shared<Data>(fd)} {}
 
 HW::Descriptor::Descriptor(const Descriptor & rhs) {
     pData = rhs.pData;
@@ -28,6 +25,9 @@ void HW::Descriptor::setFD(int fd) {
 }
         
 void HW::Descriptor::close() {
+    if (pData == nullptr) {
+        return;
+    }
     if (pData->opened_) {
         if(::close(pData->fd_) < 0) {
             throw HW::DescriptorError("Failure closing descriptor");

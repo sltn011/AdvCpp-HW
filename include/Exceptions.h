@@ -13,28 +13,25 @@ namespace HW {
 
     public:
         BaseException(const std::string _info);
-        const char * what() const noexcept;
+        const char * what() const noexcept override;
     };
 
     class DescriptorError : public BaseException 
     {
     public:
         DescriptorError(const std::string _info);
-        const char * what() const noexcept;
     };
 
     class ProcessError : public BaseException 
     {
     public:
         ProcessError(const std::string _info);
-        const char * what() const noexcept;
     };
 
     class IOError : public BaseException 
     {
     public:
         IOError(const std::string _info);
-        const char * what() const noexcept;
     };
 
 }

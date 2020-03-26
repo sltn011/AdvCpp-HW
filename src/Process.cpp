@@ -22,8 +22,10 @@ HW::Process::Process(const std::string & procPath, std::vector<std::string> & ar
         if (dup2(pipe_out[1], STDOUT_FILENO) < 0) {
             throw HW::DescriptorError("Failed to duplicate file descriptor out!");
         }
+        ::close(pipe_in[0]);
         ::close(pipe_in[1]);
         ::close(pipe_out[0]);
+        ::close(pipe_out[1]);
 
         std::vector<char*> procArgs;
         procArgs.push_back(const_cast<char*>(path.c_str()));
@@ -45,7 +47,7 @@ HW::Process::Process(const std::string & procPath, std::vector<std::string> & ar
 
 HW::Process::~Process() noexcept {
     if (pid) {
-        if (wait(nullptr) < 0) {
+        if (waitpid(pid, nullptr, 0) < 0) {
             std::cerr << "Some error happened" << std::endl;
         }
     }
@@ -73,18 +75,9 @@ void HW::Process::writeExact(const void* data, size_t len) {
     if (!isWritable()) {
         throw HW::DescriptorError("Write stream is closed!");
     }
-    ssize_t written = ::write(fd_in.getFD(), data, len);
-    if (written < 0) {
-        throw HW::IOError("Error writing to process!");
-    }
-    size_t i = static_cast<size_t>(written);
-    while(i != len) {
-        ssize_t ret = ::write(fd_in.getFD(), static_cast<const uint8_t*>(data) + i, len - i);
-        if (ret < 0) {
-            throw HW::IOError("Error writing to process!");
-        } else {
-            i += ret;
-        }
+    size_t total_written = 0;
+    while(total_written != len) {
+        total_written += write(static_cast<const uint8_t*>(data) + total_written, len - total_written);
     }
 }
 
@@ -104,20 +97,13 @@ void HW::Process::readExact(void* data, size_t len) {
     if (!isReadable()) {
         throw HW::DescriptorError("Read stream is closed!");
     } 
-    ssize_t recieved = ::read(fd_out.getFD(), data, len);
-    if (recieved < 0) {
-        throw HW::IOError("Error reading from process!");
-    }
-    size_t i = static_cast<size_t>(recieved);
-    while (i != len) {
-        ssize_t ret = ::read(fd_out.getFD(), static_cast<uint8_t*>(data) + i, len - i);
-        if (ret < 0) {
-            throw HW::IOError("Error reading from process!");
-        } else if (ret == 0) {
-            throw HW::IOError("End of file reached before reading requested number of bytes");
-        } else {
-            i += ret;
+    size_t total_read = 0;
+    while (total_read != len) {
+        size_t recieved = read(static_cast<uint8_t*>(data) + total_read, len - total_read);
+        if (recieved == 0) {
+            throw HW::IOError("End of file reached before reading required number of bytes!");
         }
+        total_read += recieved;
     }
 }
 

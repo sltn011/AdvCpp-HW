@@ -1,11 +1,14 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>
+#include <bitset>
 
 int main(int argc, char* argv[]) {
-    std::cout << "Hello, parent!";
-    std::string msg;
-    std::getline(std::cin, msg, '\0');
-    std::cout << "Child recieved " << msg;
+    std::string message = "Hello, parent!";
+    std::cout << message.size() << message;
+    
+    std::getline(std::cin, message, '\0');
+    message = std::string("Child recieved ") + message;
+    std::cout << message.size() << message;
     return 0;
 }
