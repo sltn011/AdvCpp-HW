@@ -1,11 +1,7 @@
 #include "Process.h"
 
 
-/*
- * constexpr - доступна во время компиляции
- * static - существует пока запущена программа, доступна только в этом файле
- */
-static constexpr int BUF_SIZE = 100;
+using msgSize = uint32_t;
 
 int main(int argc, char *argv[]) {
     
@@ -19,21 +15,17 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; ++i) {
         procArgs.push_back(argv[i]);
     }
-    /* procArgs.push_back(nullptr); - не обязательно, в конструкторе процесса 
-     * nullptr добавляется перед вызовом execl
-     */
+
 
     HW::Process proc(path, procArgs);
     
+
     std::string message;
-    message.resize(BUF_SIZE);
     try {
-        std::string len(2, '\0'); // 2 потому что у меня BUF_SIZE = 100, как сделать лучше не знаю(
-        // Читаю длину сообщения, приходится так потому что std::cout сайз сообщения преобразует в чары
-        // потом строку len преобразую в число байт которые надо считать из процесса
-        // Пробовал записывать размер сообщения через bitset и записывать в size_t но получал EFAULT
-        proc.readExact(len.data(), len.size()); 
-        proc.readExact(message.data(), std::stoi(len));
+        msgSize size = 0;
+        proc.readExact(&size, sizeof(size));
+        message.resize(size);
+        proc.readExact(message.data(), size);
     } catch(HW::IOError & e) {
         std::cout << e.what() << std::endl;
     }
@@ -42,14 +34,16 @@ int main(int argc, char *argv[]) {
 
     message = "Hello, child!";
     std::cout << "Sending message to child" << std::endl;
-    proc.writeExact(message.c_str(), message.size() + 1);
+    msgSize to_send = static_cast<msgSize>(message.size());
+    proc.writeExact(&to_send, sizeof(to_send));
+    proc.writeExact(message.data(), to_send);
 
 
-    message.resize(BUF_SIZE);
     try {
-        std::string len(2, '\0');
-        proc.readExact(len.data(), len.size());
-        proc.readExact(message.data(), std::stoi(len));
+        msgSize size = 0;
+        proc.readExact(&size, sizeof(size));
+        message.resize(size);
+        proc.readExact(message.data(), size);
     } catch(HW::IOError & e) {
         std::cout << e.what() << std::endl;
     }

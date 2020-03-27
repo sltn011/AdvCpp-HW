@@ -1,16 +1,21 @@
 #include "Exceptions.h"
 
-HW::BaseException::BaseException(const std::string _info) : info{_info} {}
+namespace HW {
 
-const char * HW::BaseException::what() const noexcept {
-    return info.c_str();
-}
+	BaseException::BaseException(const std::string _info) : info{ _info } {}
 
-
-HW::ProcessError::ProcessError(const std::string _info) : BaseException{_info} {}
-
-
-HW::DescriptorError::DescriptorError(const std::string _info) : BaseException{_info} {}
+	const char * BaseException::what() const noexcept {
+		return info.c_str();
+	}
 
 
-HW::IOError::IOError(const std::string _info) : BaseException{_info} {}
+	ProcessError::ProcessError(const std::string _info) : BaseException{ _info } {}
+
+
+	DescriptorError::DescriptorError(const std::string _info) : BaseException{ _info } {}
+
+
+	IOError::IOError(const std::string _info) : BaseException{ _info } {}
+
+} // HW
+
