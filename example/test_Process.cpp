@@ -1,7 +1,7 @@
 #include "Process.h"
 
 
-using msgSize = uint32_t;
+using msgSize = uint64_t;
 
 int main(int argc, char *argv[]) {
     

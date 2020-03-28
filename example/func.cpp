@@ -1,14 +1,11 @@
 #include <iostream>
 #include <string>
-#include <sys/unistd.h>
 
-using msgSize = uint32_t;
+using msgSize = uint64_t;
 
 void writeSize(const msgSize size) {
-    const msgSize * pSize = &size;
-    for (size_t i = 0; i < sizeof(size); ++i) {
-        std::cout << *(reinterpret_cast<const char*>(pSize) + i);
-    }
+    std::cout.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    std::cout.flush();
 }
 
 msgSize readSize() {
@@ -20,7 +17,7 @@ msgSize readSize() {
 int main(int argc, char* argv[]) {
     std::string message = "Hello, parent!";
     writeSize(static_cast<msgSize>(message.size()));
-    std::cout << message;
+    std::cout << message << std::flush;
 
     msgSize size = readSize();
     std::string newMessage(size, '\0');
@@ -28,6 +25,6 @@ int main(int argc, char* argv[]) {
 
     newMessage = std::string("Child recieved ") + newMessage;
     writeSize(static_cast<msgSize>(newMessage.size()));
-    std::cout << newMessage;
+    std::cout << newMessage << std::flush;
     return 0;
 }
