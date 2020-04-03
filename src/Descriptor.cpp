@@ -5,7 +5,9 @@ namespace HW {
 	Descriptor::Data::Data(const int fd) : opened_{ true }, fd_{ fd } {}
 
 	Descriptor::Data::~Data() noexcept {
-		::close(fd_);
+		if (opened_) {
+			::close(fd_);
+		}
 	}
 
 
@@ -56,4 +58,3 @@ namespace HW {
 	}
 
 } // HW
-
