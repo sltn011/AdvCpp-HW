@@ -1,26 +1,39 @@
+#ifndef HW_LOGFORMAT_H
+#define HW_LOGFORMAT_H
+
+#include <map>
+#include <string>
 
 namespace HW {
 
     namespace Format {
 
-        struct LogFormat {
-            const char *TRACE_COLOR;
-		    const char *DEBUG_COLOR;
-		    const char *INFO_COLOR;
-		    const char *WARN_COLOR;
-		    const char *ERROR_COLOR;
-		    const char *FATAL_COLOR;
-        };
+		class Color {
+		public:
+			static const std::string COLOR_BLACK;
+			static const std::string COLOR_RED;
+			static const std::string COLOR_GREEN;
+			static const std::string COLOR_YELLOW;
+			static const std::string COLOR_BLUE;
+			static const std::string COLOR_MAGENTA;
+			static const std::string COLOR_CYAN;
+			static const std::string COLOR_WHITE;
 
-        static constexpr const char *COLOR_RED = "\033[31m";
-        static constexpr const char *COLOR_YELLOW = "\033[33m";
-        static constexpr const char *COLOR_GREEN = "\033[32m";
-        static constexpr const char *COLOR_BLACK = "\033[30m";
-        static constexpr const char *COLOR_WHITE = "\033[97m";
-        static constexpr const char *COLOR_DEFAULT = "\033[39m";
-
-        static constexpr const char *RESET_ENDLINE = "\033[0m";
+			static const std::string COLOR_BOLD_BLACK;
+			static const std::string COLOR_BOLD_RED;
+			static const std::string COLOR_BOLD_GREEN;
+			static const std::string COLOR_BOLD_YELLOW;
+			static const std::string COLOR_BOLD_BLUE;
+			static const std::string COLOR_BOLD_MAGENTA;
+			static const std::string COLOR_BOLD_CYAN;
+			static const std::string COLOR_BOLD_WHITE;
+			
+			static const std::string COLOR_DEFAULT;
+			static const std::string RESET_ENDLINE;
+		};
 
     } // Format
 
 } // HW
+
+#endif // HW_LOGFORMAT_H

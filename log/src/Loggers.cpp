@@ -2,137 +2,147 @@
 
 namespace HW {
 
-	BaseLogger::BaseLogger(Level level, Format::LogFormat *format) : level_(level), format_(format) {}
+	namespace Format {
+		void fill_format_with(LogFormat &format, const std::string &color) {
+
+			int begin = static_cast<int>(Level::ALL) + 1;
+			int end	= static_cast<int>(Level::OFF);
+
+			for (begin; begin != end; ++begin) {
+				Level level = static_cast<Level>(begin);
+				if (format.find(level) == format.end()) {
+					std::pair<Level, std::string> entry = std::make_pair(level, color);
+					format.insert(entry);
+				}
+			}
+		}
+	}
+
+	BaseLogger::BaseLogger(Level level) : m_level(level) {}
 
 	BaseLogger::~BaseLogger() {}
 
-	void BaseLogger::trace(const std::string & msg) noexcept
+	void BaseLogger::trace(const std::string & msg)
 	{
-		if (level_ <= Level::TRACE) {
-			if (!format_ || !(format_->TRACE_COLOR)) {
-				log(msg);
-			} else {
-				log(format_->TRACE_COLOR + msg + Format::RESET_ENDLINE);
-			}
+		log(msg, Level::TRACE);
+	}
+
+	void BaseLogger::debug(const std::string & msg)
+	{
+		log(msg, Level::DEBUG);
+	}
+
+	void BaseLogger::info(const std::string & msg)
+	{
+		log(msg, Level::INFO);
+	}
+
+	void BaseLogger::warn(const std::string & msg)
+	{
+		log(msg, Level::WARN);
+	}
+
+	void BaseLogger::error(const std::string & msg)
+	{
+		log(msg, Level::ERROR);
+	}
+
+	void BaseLogger::fatal(const std::string & msg)
+	{
+		log(msg, Level::FATAL);
+	}
+
+	void BaseLogger::set_level(Level level)
+	{
+		m_level = level;
+	}
+
+	Level BaseLogger::level() const
+	{
+		return m_level;
+	}
+
+
+
+	FileLogger::FileLogger(const std::string & path, Level level) :
+	BaseLogger(level), m_log_file(path, std::ios_base::app) {}
+
+	void FileLogger::log(const std::string & msg, Level level) 
+	{
+		if (m_level <= level) {
+			m_log_file << msg << std::endl;
+		}
+	}
+		
+
+	void FileLogger::flush()
+	{
+		m_log_file.flush();
+	}
+
+
+
+	StdoutLogger::StdoutLogger(Level level) : BaseLogger(level) {
+		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+	}
+
+	StdoutLogger::StdoutLogger(Level level, Format::LogFormat format) : BaseLogger(level), m_format{format} {
+		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+	}
+
+	void StdoutLogger::log(const std::string & msg, Level level)
+	{
+		if (m_level <= level) {
+			auto it = m_format.find(level);
+			std::cout << it->second << msg << Format::Color::RESET_ENDLINE << std::endl;
 		}
 	}
 
-	void BaseLogger::debug(const std::string & msg) noexcept
-	{
-		if (level_ <= Level::DEBUG) {
-			if (!format_ || !(format_->DEBUG_COLOR)) {
-				log(msg);
-			} else {
-				log(format_->DEBUG_COLOR + msg + Format::RESET_ENDLINE);
-			}
-		}
-	}
-
-	void BaseLogger::info(const std::string & msg) noexcept
-	{
-		if (level_ <= Level::INFO) {
-			if (!format_ || !(format_->INFO_COLOR)) {
-				log(msg);
-			} else {
-				log(format_->INFO_COLOR + msg + Format::RESET_ENDLINE);
-			}
-		}
-	}
-
-	void BaseLogger::warn(const std::string & msg) noexcept
-	{
-		if (level_ <= Level::WARN) {
-			if (!format_ || !(format_->WARN_COLOR)) {
-				log(msg);
-			} else {
-				log(format_->WARN_COLOR + msg + Format::RESET_ENDLINE);
-			}
-		}
-	}
-
-	void BaseLogger::error(const std::string & msg) noexcept
-	{
-		if (level_ <= Level::ERROR) {
-			if (!format_ || !(format_->ERROR_COLOR)) {
-				log(msg);
-			} else {
-				log(format_->ERROR_COLOR + msg + Format::RESET_ENDLINE);
-			}
-		}
-	}
-
-	void BaseLogger::fatal(const std::string & msg) noexcept
-	{
-		if (level_ <= Level::FATAL) {
-			if (!format_ || !(format_->FATAL_COLOR)) {
-				log(msg);
-			} else {
-				log(format_->FATAL_COLOR + msg + Format::RESET_ENDLINE);
-			}
-		}
-	}
-
-	void BaseLogger::set_level(Level level) noexcept
-	{
-		level_ = level;
-	}
-
-	void BaseLogger::set_format(const Format::LogFormat *format) noexcept
-	{
-		format_ = const_cast<Format::LogFormat*>(format);
-	}
-
-	Format::LogFormat *BaseLogger::get_format() const noexcept
-	{
-		return format_;
-	}
-
-	Level BaseLogger::level() const noexcept
-	{
-		return level_;
-	}
-
-
-
-	FileLogger::FileLogger(const std::string & path, Level level, Format::LogFormat *format) : 
-	BaseLogger(level, format), log_file(path, std::ios_base::app) {}
-
-	void FileLogger::log(const std::string & msg) noexcept
-	{
-		log_file << msg << std::endl;
-	}
-
-	void FileLogger::flush() noexcept
-	{
-		log_file.flush();
-	}
-
-
-
-	StdoutLogger::StdoutLogger(Level level, Format::LogFormat *format) : BaseLogger(level, format) {}
-
-	void StdoutLogger::log(const std::string & msg) noexcept
-	{
-		std::cout << msg << std::endl;
-	}
-
-	void StdoutLogger::flush() noexcept
+	void StdoutLogger::flush()
 	{
 		std::flush(std::cout);
 	}
 
-
-
-	StderrLogger::StderrLogger(Level level, Format::LogFormat *format) : BaseLogger(level, format) {}
-
-	void StderrLogger::log(const std::string & msg) noexcept
+	void StdoutLogger::set_format(const Format::LogFormat format)
 	{
-		std::cerr << msg << std::endl;
+		m_format = format;
 	}
 
-	void StderrLogger::flush() noexcept
+	Format::LogFormat StdoutLogger::get_format() const
+	{
+		return m_format;
+	}
+
+
+	StderrLogger::StderrLogger(Level level) : BaseLogger(level) {
+		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+	}
+
+	StderrLogger::StderrLogger(Level level, Format::LogFormat format) : BaseLogger(level), m_format{format} {
+		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+	}
+
+	void StderrLogger::log(const std::string & msg, Level level)
+	{
+		if (m_level <= level) {
+			auto it = m_format.find(level);
+			std::cerr << it->second << msg << Format::Color::RESET_ENDLINE << std::endl;
+		}
+	}
+
+	void StderrLogger::flush()
 	{
 		std::flush(std::cerr);
+	}
+
+	void StderrLogger::set_format(const Format::LogFormat format)
+	{
+		m_format = format;
+	}
+
+	Format::LogFormat StderrLogger::get_format() const
+	{
+		return m_format;
 	}
 
 } // HW
