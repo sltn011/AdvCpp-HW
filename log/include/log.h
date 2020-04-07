@@ -15,21 +15,21 @@ namespace HW {
 		Logger& operator=(const Logger&) = delete;
 	public:
 		static Logger& get_instance();
-		std::unique_ptr<BaseLogger>& get_global_logger();
+		BaseLogger& get_global_logger();
 		void set_global_logger(std::unique_ptr<BaseLogger> logger);
 	};
 
 
 
-	FileLogger create_file_logger (const std::string & path, Level level);
+	std::unique_ptr<FileLogger> create_file_logger (const std::string & path, Level level);
 
-	StdoutLogger create_stdout_logger(Level level);
+	std::unique_ptr<StdoutLogger> create_stdout_logger(Level level);
 
-	StdoutLogger create_stdout_logger(Level level, Format::LogFormat format);
+	std::unique_ptr<StdoutLogger> create_stdout_logger(Level level, Format::LogFormat format);
 
-	StderrLogger create_stderr_logger(Level level);
+	std::unique_ptr<StderrLogger> create_stderr_logger(Level level);
 
-	StderrLogger create_stderr_logger(Level level, Format::LogFormat format);
+	std::unique_ptr<StderrLogger> create_stderr_logger(Level level, Format::LogFormat format);
 
 
 

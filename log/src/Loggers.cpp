@@ -83,11 +83,11 @@ namespace HW {
 
 
 	StdoutLogger::StdoutLogger(Level level) : BaseLogger(level) {
-		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+		Format::fill_format_with(m_format, Format::Color::DEFAULT);
 	}
 
 	StdoutLogger::StdoutLogger(Level level, Format::LogFormat format) : BaseLogger(level), m_format{format} {
-		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+		Format::fill_format_with(m_format, Format::Color::DEFAULT);
 	}
 
 	void StdoutLogger::log(const std::string & msg, Level level)
@@ -115,11 +115,11 @@ namespace HW {
 
 
 	StderrLogger::StderrLogger(Level level) : BaseLogger(level) {
-		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+		Format::fill_format_with(m_format, Format::Color::DEFAULT);
 	}
 
 	StderrLogger::StderrLogger(Level level, Format::LogFormat format) : BaseLogger(level), m_format{format} {
-		Format::fill_format_with(m_format, Format::Color::COLOR_DEFAULT);
+		Format::fill_format_with(m_format, Format::Color::DEFAULT);
 	}
 
 	void StderrLogger::log(const std::string & msg, Level level)

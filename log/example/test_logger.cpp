@@ -3,16 +3,15 @@
 int main() {
 
 	HW::Format::LogFormat format;
-	format.insert(std::make_pair(HW::Level::TRACE, HW::Format::Color::COLOR_GREEN));
-	format.insert(std::make_pair(HW::Level::DEBUG, HW::Format::Color::COLOR_BOLD_GREEN));
-	//format.insert(std::make_pair(HW::Level::INFO, HW::Format::Color::COLOR_YELLOW));
-	//format.insert(std::make_pair(HW::Level::WARN, HW::Format::Color::COLOR_BOLD_YELLOW));
-	format.insert(std::make_pair(HW::Level::ERROR, HW::Format::Color::COLOR_RED));
-	format.insert(std::make_pair(HW::Level::FATAL, HW::Format::Color::COLOR_BOLD_RED));
+
+	//HW::Format::fill_format_with(format, HW::Format::Color::DEFAULT); используется для заполнения 
+
+	format[HW::Level::TRACE] = HW::Format::Color::GREEN;
+	format[HW::Level::DEBUG] = HW::Format::Color::BOLD_GREEN;
+	format[HW::Level::ERROR] = HW::Format::Color::RED;
+	format[HW::Level::FATAL] = HW::Format::Color::BOLD_RED;
 	
-	auto i = HW::create_stdout_logger(HW::Level::ALL, format);
-	auto stdout_log = std::make_unique<HW::StdoutLogger>(i);
-	HW::Logger::get_instance().set_global_logger(std::move(stdout_log));
+	HW::Logger::get_instance().set_global_logger(HW::create_stdout_logger(HW::Level::ALL, format));
 	HW::trace("TRACE: Stdout");
 	HW::debug("DEBUG: Stdout");
 	HW::info("INFO: Stdout");
@@ -21,8 +20,7 @@ int main() {
 	HW::fatal("FATAL: Stdout");
 	std::cout << std::endl;
 	
-	auto stderr_logger = std::make_unique<HW::StderrLogger>(HW::create_stderr_logger(HW::Level::ERROR, format));
-	HW::Logger::get_instance().set_global_logger(std::move(stderr_logger));
+	HW::Logger::get_instance().set_global_logger(HW::create_stderr_logger(HW::Level::ERROR, format));
 	HW::trace("TRACE: Stderr");
 	HW::debug("DEBUG: Stderr");
 	HW::info("INFO: Stderr");
@@ -30,8 +28,7 @@ int main() {
 	HW::error("ERROR: Stderr");
 	HW::fatal("FATAL: Stderr");
 	
-	auto file_logger = std::make_unique<HW::FileLogger>(HW::create_file_logger("log.txt", HW::Level::INFO));
-	HW::Logger::get_instance().set_global_logger(std::move(file_logger));
+	HW::Logger::get_instance().set_global_logger(HW::create_file_logger("log.txt", HW::Level::INFO));
 	HW::trace("TRACE: File");
 	HW::debug("DEBUG: File");
 	HW::info("INFO: File");

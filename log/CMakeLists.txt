@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(log)
 
 # Файлы
-add_library(log STATIC src/Loggers.cpp src/LogFormat.cpp src/log.cpp)
+add_library(log STATIC src/Loggers.cpp src/log.cpp)
 target_include_directories(log PUBLIC include)
 
 add_subdirectory(example)
