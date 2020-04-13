@@ -10,8 +10,8 @@ int main(int argc, char *argv[]) {
         std::cout << "accepting:\n";
         HW::Connection connection = server.accept();
         std::cout << "Connection: " << connection.isOpened() << std::endl;
-        auto[dst_adr, dst_port] = connection.getDstData();
-        auto[src_adr, src_port] = connection.getSrcData();
+        auto[dst_adr, dst_port] = connection.getDstAddr();
+        auto[src_adr, src_port] = connection.getSrcAddr();
         std::cout << "Dst: " << dst_adr << ' ' << dst_port << std::endl;
         std::cout << "Src: " << src_adr << ' ' << src_port << std::endl;
         server.close();

@@ -7,14 +7,14 @@
 #include <memory>
 
 
+
 namespace HW {
 
     class Server {
     private:
-        Socket      m_socket;
-        std::string m_server_ip;
-        uint16_t    m_server_port;
-        bool        m_opened;
+        Socket                              m_socket;
+        std::pair<std::string, uint16_t>    m_addr;
+        bool                                m_opened;
 
     public:
         Server(const std::string & ip, const uint16_t port);

@@ -3,7 +3,7 @@
 namespace HW {
 
     Server::Server(const std::string & ip, const uint16_t port)
-    : m_server_ip{ip}, m_server_port{port}, m_opened{false} {}
+    : m_addr{std::make_pair(ip, port)}, m_opened{false} {}
 
     void Server::open() {
         if (isOpened()) {
@@ -11,7 +11,7 @@ namespace HW {
         }
         try {
             m_socket.open();
-            m_socket.bind(m_server_ip, m_server_port);
+            m_socket.bind(m_addr.first, m_addr.second);
             m_opened = true;
         }
         catch (HW::DescriptorError &e) {
@@ -47,7 +47,7 @@ namespace HW {
         uint16_t client_port = ntohs(client_addr.sin_port);
 
         std::pair client = std::make_pair(client_ip, client_port);
-        std::pair server = std::make_pair(m_server_ip, m_server_port);
+        std::pair server = m_addr;
         return Connection(client_fd, client, server);
     }
 

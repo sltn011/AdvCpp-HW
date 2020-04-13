@@ -5,11 +5,10 @@ namespace HW {
     Connection::Connection() : m_opened{false} {}
 
     Connection::Connection(const std::string & ip, const uint16_t port)
-    : m_dst_addr(ip), m_dst_port(port), m_opened{false} {}
+    : m_dst_addr{std::make_pair(ip, port)}, m_opened{false} {}
 
     Connection::Connection(const int fd, std::pair<std::string, uint16_t> &dst, std::pair<std::string, uint16_t> &src)
-    : m_socket{fd}, m_dst_addr{dst.first}, m_src_addr{src.first}, 
-    m_dst_port{dst.second}, m_src_port{src.second}, m_opened{true} {}
+    : m_socket{fd}, m_dst_addr{dst}, m_src_addr{src}, m_opened{true} {}
 
     size_t Connection::read(void* data, size_t size) {
         if (!isOpened()) {
@@ -68,8 +67,8 @@ namespace HW {
         try {
             m_socket.close();
             m_opened = false;
-            m_src_addr.clear();
-            m_src_port = 0;
+            m_src_addr.first.clear();
+            m_src_addr.second = 0;
         }
         catch (HW::DescriptorError &e) {
             throw;
@@ -97,7 +96,7 @@ namespace HW {
         }
     }
 
-    bool Connection::connect(const std::string & addr, const uint16_t port) {
+    bool Connection::connect(const std::string & ip, const uint16_t port) {
         if (isOpened()) {
             return false;
         }
@@ -112,32 +111,31 @@ namespace HW {
         sockaddr_in sock_addr{};
         sock_addr.sin_family = AF_INET;
         sock_addr.sin_port = htons(port);
-        if (inet_aton(addr.c_str(), &sock_addr.sin_addr) == 0) {
+        if (inet_aton(ip.c_str(), &sock_addr.sin_addr) == 0) {
             throw HW::IOError("Error parsing address!");
         }
         if (::connect(m_socket.getFD(), reinterpret_cast<sockaddr*>(&sock_addr), sizeof(sock_addr)) < 0) {
             return false;
         }
-        m_src_addr = addr;
-        m_src_port = port;
+        m_src_addr = std::make_pair(ip, port);
         m_opened = true;
         return true;
     }
 
-    void Connection::setDstAddr(const std::string &addr) {
-        m_dst_addr = addr;
+    void Connection::setDstIP(const std::string &ip) {
+        m_dst_addr.first = ip;
     }
 
     void Connection::setDstPort(const uint16_t port) {
-        m_dst_port = port;
+        m_dst_addr.second = port;
     }
 
-    std::pair<std::string, uint16_t> Connection::getDstData() const {
-        return std::make_pair(m_dst_addr, m_dst_port);
+    std::pair<std::string, uint16_t> Connection::getDstAddr() const {
+        return m_dst_addr;
     }
         
-    std::pair<std::string, uint16_t> Connection::getSrcData() const {
-        return std::make_pair(m_src_addr, m_src_port);
+    std::pair<std::string, uint16_t> Connection::getSrcAddr() const {
+        return m_src_addr;
     }
 
 } // HW

@@ -13,12 +13,10 @@ namespace HW {
 
     class Connection {
     private:
-        Socket      m_socket;
-        std::string m_dst_addr;
-        std::string m_src_addr; // server
-        uint16_t    m_dst_port;
-        uint16_t    m_src_port;
-        bool        m_opened;
+        Socket                              m_socket;
+        std::pair<std::string, uint16_t>    m_dst_addr; // client
+        std::pair<std::string, uint16_t>    m_src_addr; // server
+        bool                                m_opened;
 
         Connection(const Connection&) = delete;
         Connection& operator=(const Connection&) = delete;
@@ -39,12 +37,12 @@ namespace HW {
         void close();
         bool isOpened() const;
         void set_timeout(int seconds);
-        bool connect(const std::string & addr, const uint16_t port);
-        void setDstAddr(const std::string &addr);
+        bool connect(const std::string & ip, const uint16_t port);
+        void setDstIP(const std::string &ip);
         void setDstPort(const uint16_t port);
 
-        std::pair<std::string, uint16_t> getDstData() const;
-        std::pair<std::string, uint16_t> getSrcData() const;
+        std::pair<std::string, uint16_t> getDstAddr() const;
+        std::pair<std::string, uint16_t> getSrcAddr() const;
     };
 
 } // HW
