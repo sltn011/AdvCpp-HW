@@ -13,11 +13,9 @@ namespace HW {
 
     Socket::Socket(int valid_sfd) : m_fd{valid_sfd}, m_opened{true} {}
 
-    Socket::Socket(Socket &&rhs) noexcept {
-        m_fd = -1;
-        m_opened = false;
-        std::swap(m_fd, rhs.m_fd);
-        std::swap(m_opened, rhs.m_opened);
+	Socket::Socket(Socket &&rhs) noexcept : m_fd{ rhs.m_fd }, m_opened{ rhs.m_opened } {
+		rhs.m_fd = -1;
+		rhs.m_opened = false;
     }
 
     Socket::~Socket() noexcept {

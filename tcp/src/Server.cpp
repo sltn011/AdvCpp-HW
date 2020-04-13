@@ -5,11 +5,6 @@ namespace HW {
     Server::Server(const std::string & ip, const uint16_t port)
     : m_server_ip{ip}, m_server_port{port}, m_opened{false} {}
 
-    Server::Server(Server &&rhs) noexcept
-    : m_socket{std::move(rhs.m_socket)}, m_server_ip{std::move(rhs.m_server_ip)}, m_server_port{std::move(rhs.m_server_port)},
-    m_opened{std::move(rhs.m_opened)}
-    {}
-
     void Server::open() {
         if (isOpened()) {
             return;

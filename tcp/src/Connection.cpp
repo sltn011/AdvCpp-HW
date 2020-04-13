@@ -11,11 +11,6 @@ namespace HW {
     : m_socket{fd}, m_dst_addr{dst.first}, m_src_addr{src.first}, 
     m_dst_port{dst.second}, m_src_port{src.second}, m_opened{true} {}
 
-    Connection::Connection(Connection &&rhs) noexcept
-    : m_socket{std::move(rhs.m_socket)}, m_dst_addr{std::move(rhs.m_dst_addr)}, m_dst_port{std::move(rhs.m_dst_port)},
-    m_src_addr{std::move(rhs.m_src_addr)}, m_src_port{std::move(rhs.m_src_port)}, m_opened{std::move(rhs.m_opened)}
-    {}
-
     size_t Connection::read(void* data, size_t size) {
         if (!isOpened()) {
 			throw HW::DescriptorError("Connection is closed!");

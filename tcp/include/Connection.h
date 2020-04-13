@@ -31,7 +31,7 @@ namespace HW {
     public:
         Connection();
         Connection(const std::string & ip, const uint16_t port);
-        Connection(Connection &&rhs) noexcept;
+        Connection(Connection &&rhs) noexcept = default;
         size_t read(void* data, size_t size);
         void readExact(void* data, size_t size);
         size_t write(const void* data, size_t size);

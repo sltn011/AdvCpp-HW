@@ -18,7 +18,7 @@ namespace HW {
 
     public:
         Server(const std::string & ip, const uint16_t port);
-        Server(Server &&rhs) noexcept;
+        Server(Server &&rhs) noexcept = default;
         void open();
         void listen(const int queue_size);
         Connection accept();
