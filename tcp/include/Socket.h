@@ -14,18 +14,17 @@ namespace HW {
 
     class Socket {
     private:
-        int     m_fd;
-        bool    m_opened;
+        int m_fd;
 
         Socket(int valid_sfd);
-        Socket(const Socket&) = delete;
-        Socket &operator=(const Socket&) = delete;
+        Socket(const Socket &rhs) = delete;
+        Socket &operator=(const Socket &rhs) = delete;
 
         friend class Connection;
 
     public:
         Socket();
-        Socket(Socket &&) noexcept;
+        Socket(Socket &&rhs) noexcept;
         ~Socket() noexcept;
         void open();
         void bind(const std::string &ip, const uint16_t port);

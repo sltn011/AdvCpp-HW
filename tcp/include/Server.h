@@ -3,21 +3,19 @@
 
 #include "Socket.h"
 #include "Connection.h"
-#include <vector>
-#include <memory>
-
-
 
 namespace HW {
 
     class Server {
     private:
-        Socket                              m_socket;
-        std::pair<std::string, uint16_t>    m_addr;
-        bool                                m_opened;
+        Socket  m_socket;
+        Address m_addr;
+
+        Server(const Server &rhs) = delete;
+        Server &operator=(const Server &rhs) = delete;
 
     public:
-        Server(const std::string & ip, const uint16_t port);
+        Server(const std::string &ip, const uint16_t port);
         Server(Server &&rhs) noexcept = default;
         void open();
         void listen(const int queue_size);

@@ -5,8 +5,13 @@
 int main() {
     try {
         HW::Connection connection;
-        connection.set_timeout(5);
-        std::cout << "Connected: " << std::boolalpha << connection.connect("127.1.1.1", 8888) << std::endl;
+        connection.setRecieveTimeout(5);
+        connection.setSendTimeout(5);
+        connection.connect("127.1.1.1", 8888);
+        auto[dst_ip, dst_port] = connection.getDstAddr();
+        auto[src_ip, src_port] = connection.getSrcAddr();
+        std::cout << "Dst: " << dst_ip << ' ' << dst_port << std::endl;
+        std::cout << "Src: " << src_ip << ' ' << src_port << std::endl;
         connection.close();
     }
     catch (HW::BaseException &e) {

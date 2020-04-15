@@ -2,30 +2,26 @@
 
 namespace HW {
 
-    Socket::Socket() {
+    Socket::Socket() : m_fd{-1} {
         int fd = socket(AF_INET, SOCK_STREAM, 0);
         if (fd < 0) {
             throw HW::DescriptorError("Error creating socket!");
         }
         m_fd = fd;
-        m_opened = true;
     }
 
-    Socket::Socket(int valid_sfd) : m_fd{valid_sfd}, m_opened{true} {}
+    Socket::Socket(int valid_sfd) : m_fd{valid_sfd} {}
 
-    Socket::Socket(Socket &&rhs) noexcept : m_fd{rhs.m_fd}, m_opened{rhs.m_opened} {
+    Socket::Socket(Socket &&rhs) noexcept : m_fd{rhs.m_fd} {
         rhs.m_fd = -1;
-        rhs.m_opened = false;
     }
 
     Socket::~Socket() noexcept {
-        if (isOpened()) {
-           while (::close(m_fd) < 0) {
-               if (errno != EINTR) {
-                   std::cerr << ("Error closing socket!") << std::endl;
-               }
-            }
-            m_opened = false;
+        try {
+            close();
+        }
+        catch (HW::DescriptorError &e) {
+            std::cerr << e.what() << std::endl;
         }
     }
 
@@ -38,7 +34,6 @@ namespace HW {
             throw HW::DescriptorError("Error opening socket!");
         }
         m_fd = fd;
-        m_opened = true;
     }
 
     void Socket::bind(const std::string &ip, const uint16_t port) {
@@ -61,7 +56,7 @@ namespace HW {
     }
 
     bool Socket::isOpened() const {
-        return m_opened;
+        return m_fd != -1;
     }
     
     void Socket::close() {
@@ -72,7 +67,6 @@ namespace HW {
                }
             }
             m_fd = -1;
-            m_opened = false;
         }
     }
 

@@ -8,36 +8,36 @@ namespace HW {
 
     class BaseException : public std::exception 
     {
-    protected:
-        std::string info;
+    private:
+        std::string m_info;
 
     public:
-        BaseException(const std::string _info);
-        const char * what() const noexcept override;
+        BaseException(const std::string &info);
+        const char *what() const noexcept override;
     };
 
     class DescriptorError : public BaseException 
     {
     public:
-        DescriptorError(const std::string _info);
+        DescriptorError(const std::string &info);
     };
 
     class ProcessError : public BaseException 
     {
     public:
-        ProcessError(const std::string _info);
+        ProcessError(const std::string &info);
     };
 
     class IOError : public BaseException 
     {
     public:
-        IOError(const std::string _info);
+        IOError(const std::string &info);
     };
 
     class NetworkError : public BaseException 
     {
     public:
-        NetworkError(const std::string _info);
+        NetworkError(const std::string &info);
     };
 
 }

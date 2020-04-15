@@ -2,15 +2,12 @@
 
 namespace HW {
 
-    Connection::Connection() : m_opened{false} {}
+    Connection::Connection() {}
 
-    Connection::Connection(const std::string & ip, const uint16_t port)
-    : m_dst_addr{std::make_pair(ip, port)}, m_opened{false} {}
+    Connection::Connection(const int fd, Address &dst, Address &src)
+    : m_socket{fd}, m_dst_addr{dst}, m_src_addr{src} {}
 
-    Connection::Connection(const int fd, std::pair<std::string, uint16_t> &dst, std::pair<std::string, uint16_t> &src)
-    : m_socket{fd}, m_dst_addr{dst}, m_src_addr{src}, m_opened{true} {}
-
-    size_t Connection::read(void* data, size_t size) {
+    size_t Connection::read(void *data, size_t size) {
         if (!isOpened()) {
 			throw HW::DescriptorError("Connection is closed!");
 		}
@@ -23,7 +20,7 @@ namespace HW {
 		}
     }
 
-    void Connection::readExact(void* data, size_t size) {
+    void Connection::readExact(void *data, size_t size) {
         if (!isOpened()) {
 			throw HW::DescriptorError("Connection is closed!");
 		}
@@ -37,7 +34,7 @@ namespace HW {
 		}
     }
 
-    size_t Connection::write(const void* data, size_t size) {
+    size_t Connection::write(const void *data, size_t size) {
         if (!isOpened()) {
 			throw HW::DescriptorError("Connection is closed!");
 		}
@@ -50,7 +47,7 @@ namespace HW {
 		}
     }
 
-    void Connection::writeExact(const void* data, size_t size) {
+    void Connection::writeExact(const void *data, size_t size) {
         if (!isOpened()) {
 			throw HW::DescriptorError("Connection is closed!");
 		}
@@ -66,9 +63,10 @@ namespace HW {
         }
         try {
             m_socket.close();
-            m_opened = false;
             m_src_addr.first.clear();
             m_src_addr.second = 0;
+            m_dst_addr.first.clear();
+            m_dst_addr.second = 0;
         }
         catch (HW::DescriptorError &e) {
             throw;
@@ -76,19 +74,17 @@ namespace HW {
     }
 
     bool Connection::isOpened() const {
-        return m_opened;
+        return !m_src_addr.first.empty();
     }
 
-    void Connection::set_timeout(int seconds) {
+    void Connection::setTimeout(int seconds, int optname) {
         if (!m_socket.isOpened()) {
             return;
         }
-        timeval timeout{};
-        timeout.tv_sec = seconds;
-        timeout.tv_usec = 0;
+        timeval timeout{seconds, 0};
         if (setsockopt(m_socket.getFD(),
                         SOL_SOCKET,
-                        SO_SNDTIMEO,
+                        optname,
                         &timeout,
                         sizeof(timeout)) < 0) 
         {
@@ -96,9 +92,27 @@ namespace HW {
         }
     }
 
-    bool Connection::connect(const std::string & ip, const uint16_t port) {
+    void Connection::setRecieveTimeout(int seconds) {
+        try {
+            setTimeout(seconds, SO_RCVTIMEO);
+        }
+        catch (HW::NetworkError &e) {
+            throw;
+        }
+    }
+
+    void Connection::setSendTimeout(int seconds) {
+        try {
+            setTimeout(seconds, SO_SNDTIMEO);
+        }
+        catch (HW::NetworkError &e) {
+            throw;
+        }
+    }
+
+    void Connection::connect(const std::string &ip, const uint16_t port) {
         if (isOpened()) {
-            return false;
+            throw HW::NetworkError("Already has opened connection!");
         }
         if (!m_socket.isOpened()) {
             try {
@@ -115,26 +129,23 @@ namespace HW {
             throw HW::IOError("Error parsing address!");
         }
         if (::connect(m_socket.getFD(), reinterpret_cast<sockaddr*>(&sock_addr), sizeof(sock_addr)) < 0) {
-            return false;
+            throw HW::NetworkError("Error connecting to " + ip + std::to_string(port));
         }
         m_src_addr = std::make_pair(ip, port);
-        m_opened = true;
-        return true;
+
+        sockaddr_in dst_addr{};
+        socklen_t dst_addr_size = sizeof(dst_addr);
+        getsockname(m_socket.getFD(), reinterpret_cast<sockaddr*>(&dst_addr), &dst_addr_size);
+        std::string dst_ip(inet_ntoa(dst_addr.sin_addr));
+        uint16_t dst_port = ntohs(dst_addr.sin_port);
+        m_dst_addr = std::make_pair(dst_ip, dst_port);
     }
 
-    void Connection::setDstIP(const std::string &ip) {
-        m_dst_addr.first = ip;
-    }
-
-    void Connection::setDstPort(const uint16_t port) {
-        m_dst_addr.second = port;
-    }
-
-    std::pair<std::string, uint16_t> Connection::getDstAddr() const {
+    Address Connection::getDstAddr() const {
         return m_dst_addr;
     }
         
-    std::pair<std::string, uint16_t> Connection::getSrcAddr() const {
+    Address Connection::getSrcAddr() const {
         return m_src_addr;
     }
 

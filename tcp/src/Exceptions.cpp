@@ -2,22 +2,22 @@
 
 namespace HW {
 
-	BaseException::BaseException(const std::string _info) : info{ _info } {}
+	BaseException::BaseException(const std::string &info) : m_info{ info } {}
 
-	const char * BaseException::what() const noexcept {
-		return info.c_str();
+	const char *BaseException::what() const noexcept {
+		return m_info.c_str();
 	}
 
 
-	ProcessError::ProcessError(const std::string _info) : BaseException{ _info } {}
+	ProcessError::ProcessError(const std::string &info) : BaseException{ info } {}
 
 
-	DescriptorError::DescriptorError(const std::string _info) : BaseException{ _info } {}
+	DescriptorError::DescriptorError(const std::string &info) : BaseException{ info } {}
 
 
-	IOError::IOError(const std::string _info) : BaseException{ _info } {}
+	IOError::IOError(const std::string &info) : BaseException{ info } {}
 
-	NetworkError::NetworkError(const std::string _info) : BaseException{ _info } {}
+	NetworkError::NetworkError(const std::string &info) : BaseException{ info } {}
 
 } // HW
 
