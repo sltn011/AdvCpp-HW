@@ -6,19 +6,8 @@ namespace HW {
     : m_addr{std::make_pair(ip, port)} {}
 
     void Server::open() {
-        try {
-            m_socket.open();
-            m_socket.bind(m_addr.first, m_addr.second);
-        }
-        catch (HW::DescriptorError &e) {
-            throw;
-        }
-        catch (HW::IOError &e) {
-            throw;
-        }
-        catch (HW::NetworkError &e) {
-            throw;
-        }
+        m_socket.open();
+        m_socket.bind(m_addr.first, m_addr.second);
     }
 
     void Server::listen(const int queue_size) {
@@ -52,21 +41,11 @@ namespace HW {
     }
 
     void Server::close() {
-        try {
-            m_socket.close();
-        }
-        catch (HW::DescriptorError &e) {
-            throw;
-        }
+        m_socket.close();
     }
 
     void Server::set_max_connect(const int new_max) {
-        try {
-            listen(new_max);
-        }
-        catch (HW::NetworkError &e) {
-            throw;
-        }
+        listen(new_max);
     }
 
 

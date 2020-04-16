@@ -61,16 +61,11 @@ namespace HW {
         if (!isOpened()) {
             return;
         }
-        try {
-            m_socket.close();
-            m_src_addr.first.clear();
-            m_src_addr.second = 0;
-            m_dst_addr.first.clear();
-            m_dst_addr.second = 0;
-        }
-        catch (HW::DescriptorError &e) {
-            throw;
-        }
+        m_socket.close();
+        m_src_addr.first.clear();
+        m_src_addr.second = 0;
+        m_dst_addr.first.clear();
+        m_dst_addr.second = 0;
     }
 
     bool Connection::isOpened() const {
@@ -93,35 +88,20 @@ namespace HW {
     }
 
     void Connection::setRecieveTimeout(int seconds) {
-        try {
-            setTimeout(seconds, SO_RCVTIMEO);
-        }
-        catch (HW::NetworkError &e) {
-            throw;
-        }
+        setTimeout(seconds, SO_RCVTIMEO);
     }
 
     void Connection::setSendTimeout(int seconds) {
-        try {
-            setTimeout(seconds, SO_SNDTIMEO);
-        }
-        catch (HW::NetworkError &e) {
-            throw;
-        }
+        setTimeout(seconds, SO_SNDTIMEO);
     }
 
     void Connection::connect(const std::string &ip, const uint16_t port) {
         if (isOpened()) {
             throw HW::NetworkError("Already has opened connection!");
         }
-        if (!m_socket.isOpened()) {
-            try {
-                m_socket.open();
-            }
-            catch (HW::DescriptorError &e) {
-                throw;
-            }
-        }
+
+        m_socket.open();
+
         sockaddr_in sock_addr{};
         sock_addr.sin_family = AF_INET;
         sock_addr.sin_port = htons(port);
