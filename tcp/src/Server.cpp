@@ -44,7 +44,7 @@ namespace HW {
         m_socket.close();
     }
 
-    void Server::set_max_connect(const int new_max) {
+    void Server::setMaxConnect(const int new_max) {
         listen(new_max);
     }
 

@@ -22,7 +22,7 @@ namespace HW {
         Connection accept();
         bool isOpened() const;
         void close();
-        void set_max_connect(const int new_max);
+        void setMaxConnect(const int new_max);
     };
 
 } // HW
