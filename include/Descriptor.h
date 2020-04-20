@@ -2,31 +2,22 @@
 #define HW_DISCRIPTOR_H
 
 #include <sys/unistd.h>
-#include <memory>
 #include "Exceptions.h"
+#include <iostream>
 
 namespace HW {
 
     class Descriptor 
     {
     private:
-
-        struct Data {
-        public:
-            bool opened_;
-            int fd_;
-
-            Data(const int fd);
-            ~Data() noexcept;
-        };
-
-        std::shared_ptr<Data> pData;
+        int m_fd;
 
     public:
         Descriptor();
         Descriptor(const int fd);
-        Descriptor(const Descriptor &rhs);
-        Descriptor &operator=(const Descriptor &rhs);
+        ~Descriptor();
+        Descriptor(const Descriptor &rhs) = delete;
+        Descriptor &operator=(const Descriptor &rhs) = delete;
 
         void setFD(int fd);
         void close();

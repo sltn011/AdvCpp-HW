@@ -22,32 +22,32 @@ namespace HW {
 
 	BaseLogger::~BaseLogger() {}
 
-	void BaseLogger::trace(const std::string & msg)
+	void BaseLogger::trace(const std::string &msg)
 	{
 		log(msg, Level::TRACE);
 	}
 
-	void BaseLogger::debug(const std::string & msg)
+	void BaseLogger::debug(const std::string &msg)
 	{
 		log(msg, Level::DEBUG);
 	}
 
-	void BaseLogger::info(const std::string & msg)
+	void BaseLogger::info(const std::string &msg)
 	{
 		log(msg, Level::INFO);
 	}
 
-	void BaseLogger::warn(const std::string & msg)
+	void BaseLogger::warn(const std::string &msg)
 	{
 		log(msg, Level::WARN);
 	}
 
-	void BaseLogger::error(const std::string & msg)
+	void BaseLogger::error(const std::string &msg)
 	{
 		log(msg, Level::ERROR);
 	}
 
-	void BaseLogger::fatal(const std::string & msg)
+	void BaseLogger::fatal(const std::string &msg)
 	{
 		log(msg, Level::FATAL);
 	}
@@ -64,10 +64,10 @@ namespace HW {
 
 
 
-	FileLogger::FileLogger(const std::string & path, Level level) :
+	FileLogger::FileLogger(const std::string &path, Level level) :
 	BaseLogger(level), m_log_file(path, std::ios_base::app) {}
 
-	void FileLogger::log(const std::string & msg, Level level) 
+	void FileLogger::log(const std::string &msg, Level level) 
 	{
 		if (m_level <= level) {
 			m_log_file << msg << std::endl;
@@ -90,7 +90,7 @@ namespace HW {
 		Format::fill_format_with(m_format, Format::Color::DEFAULT);
 	}
 
-	void StdoutLogger::log(const std::string & msg, Level level)
+	void StdoutLogger::log(const std::string &msg, Level level)
 	{
 		if (m_level <= level) {
 			auto it = m_format.find(level);
@@ -122,7 +122,7 @@ namespace HW {
 		Format::fill_format_with(m_format, Format::Color::DEFAULT);
 	}
 
-	void StderrLogger::log(const std::string & msg, Level level)
+	void StderrLogger::log(const std::string &msg, Level level)
 	{
 		if (m_level <= level) {
 			auto it = m_format.find(level);

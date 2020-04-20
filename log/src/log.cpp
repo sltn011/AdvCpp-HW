@@ -2,25 +2,25 @@
 
 namespace HW {
 
-	Logger::Logger() : global_logger{std::unique_ptr<StdoutLogger>(new StdoutLogger(Level::ALL)) } {}
+	Logger::Logger() : m_global_logger{std::unique_ptr<StdoutLogger>(new StdoutLogger(Level::ALL)) } {}
 
-	Logger& Logger::get_instance() {
+	Logger &Logger::get_instance() {
 		static Logger log_instance;
 		return log_instance;
 	}
 
-	BaseLogger& Logger::get_global_logger() {
-		return *global_logger;
+	BaseLogger &Logger::get_global_logger() {
+		return *m_global_logger;
 	}
 
 	void Logger::set_global_logger(std::unique_ptr<BaseLogger> logger)
 	{
 		if (logger != nullptr) {
-			global_logger = std::move(logger);
+			m_global_logger = std::move(logger);
 		}
 	}
 
-	std::unique_ptr<FileLogger> create_file_logger(const std::string & path, Level level)
+	std::unique_ptr<FileLogger> create_file_logger(const std::string &path, Level level)
 	{
 		return std::unique_ptr<FileLogger>(new FileLogger(path, level));
 	}

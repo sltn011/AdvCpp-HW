@@ -2,59 +2,43 @@
 
 namespace HW {
 
-	Descriptor::Data::Data(const int fd) : opened_{ true }, fd_{ fd } {}
+	Descriptor::Descriptor() : m_fd{-1} {}
 
-	Descriptor::Data::~Data() noexcept {
-		if (opened_) {
-			::close(fd_);
+	Descriptor::Descriptor(const int fd) : m_fd{fd} {}
+
+	Descriptor::~Descriptor() {
+		try {
+			close();
 		}
-	}
-
-
-	Descriptor::Descriptor() {}
-
-	Descriptor::Descriptor(const int fd) : pData{ std::make_shared<Data>(fd) } {}
-
-	Descriptor::Descriptor(const Descriptor & rhs) {
-		pData = rhs.pData;
-	}
-
-	Descriptor & HW::Descriptor::operator=(const Descriptor &rhs) {
-		pData = rhs.pData;
-		return *this;
+		catch (HW::DescriptorError &e) {
+			std::cerr << e.what() << std::endl;
+		}
 	}
 
 	void Descriptor::setFD(int fd) {
-		pData = std::make_shared<Data>(fd);
+		close();
+		m_fd = fd;
 	}
 
 	void Descriptor::close() {
-		if (pData == nullptr) {
+		if (!isOpened()) {
 			return;
 		}
-		if (pData->opened_) {
-			if (::close(pData->fd_) < 0) {
-				throw HW::DescriptorError("Failure closing descriptor");
-			}
-			pData->opened_ = false;
-		}
+		while (::close(m_fd) < 0) {
+            if (errno != EINTR) {
+               throw HW::DescriptorError("Error closing socket!");
+           }
+        }
+		m_fd = -1;
 	}
 
 	int Descriptor::getFD() const {
-		if (pData) {
-			return pData->fd_;
-		}
-		else {
-			return -1;
-		}
+		return m_fd;
 	}
+	
 	bool Descriptor::isOpened() const {
-		if (pData) {
-			return pData->opened_;
-		}
-		else {
-			return false;
-		}
+		return m_fd != -1;
 	}
 
 } // HW
+

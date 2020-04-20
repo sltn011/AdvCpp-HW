@@ -53,7 +53,7 @@ namespace HW {
 		void log(const std::string &msg, Level level) override;
 
 	public:
-		FileLogger(const std::string & path, Level level);
+		FileLogger(const std::string &path, Level level);
 		void flush() override;
 
 	};
