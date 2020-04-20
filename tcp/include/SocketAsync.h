@@ -1,5 +1,5 @@
-#ifndef HW_SOCKET_H
-#define HW_SOCKET_H
+#ifndef HW_SOCKET_ASYNC_H
+#define HW_SOCKET_ASYNC_H
 
 #include <sys/socket.h>
 #include <sys/unistd.h>
@@ -12,21 +12,21 @@
 
 namespace HW {
 
-    class Socket {
+    class SocketAsync {
     private:
         int m_fd;
 
-        Socket(int valid_sfd);
-        Socket(const Socket &rhs) = delete;
-        Socket &operator=(const Socket &rhs) = delete;
+        SocketAsync(int valid_sfd);
+        SocketAsync(const SocketAsync &rhs) = delete;
+        SocketAsync &operator=(const SocketAsync &rhs) = delete;
 
         friend class Connection;
         friend class ConnectionAsync;
 
     public:
-        Socket();
-        Socket(Socket &&rhs) noexcept;
-        ~Socket() noexcept;
+        SocketAsync();
+        SocketAsync(SocketAsync &&rhs) noexcept;
+        ~SocketAsync() noexcept;
         void open();
         void bind(const std::string &ip, const uint16_t port);
         int getFD() const;
@@ -36,4 +36,4 @@ namespace HW {
 
 } // HW
 
-#endif // HW_SOCKET_H
+#endif // HW_SOCKET_ASYNC_H
