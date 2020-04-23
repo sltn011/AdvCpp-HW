@@ -64,11 +64,13 @@ namespace HW {
 		uint16_t client_port = ntohs(client_addr.sin_port);
 		
 		bool success;
-		std::tie(std::ignore, success) = m_connections.emplace(client_fd, ConnectionAsync(client_fd));
+		std::tie(std::ignore, success) = m_connections.try_emplace(client_fd, ConnectionAsync(client_fd));
 		if (!success) {
 			throw HW::NetworkError("Error accepting connection!");
 		}
 		addToEpoll(client_fd, m_client_events);
+		m_connections[client_fd].setRecieveTimeout(5);
+		m_connections[client_fd].setSendTimeout(5);
 	}
 
 	bool ServerAsync::isOpened() const {
@@ -79,6 +81,7 @@ namespace HW {
 		for (auto& c : m_connections) {
 			removeFromEpoll(c.first);
 		}
+		m_connections.clear();
 		removeFromEpoll(m_socket.getFD());
 		m_socket.close();
 		m_epollfd.close();
@@ -122,9 +125,8 @@ namespace HW {
 		c.setEvent(events);
 		if (m_callback) {
 			m_callback(c);
-			std::cout << "After callback!" << std::endl;
 		}
-		if (!c.isOpened() || c.isEventSet(EPOLLRDHUP) || c.isEventSet(EPOLLERR) || c.isEventSet(EPOLLHUP)) {
+		if (!c.isOpened() || c.isEventSet(EPOLLERR)) {
 			removeFromEpoll(fd);
 			m_connections.erase(fd);
 		}

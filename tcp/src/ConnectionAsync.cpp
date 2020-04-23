@@ -24,20 +24,6 @@ namespace HW {
 		return static_cast<size_t>(recieved);
 	}
 
-	void ConnectionAsync::readExact(void *data, size_t size) {
-		if (!isOpened()) {
-			throw HW::DescriptorError("Connection is closed!");
-		}
-		size_t total_read = 0;
-		while (total_read != size) {
-			size_t recieved = read(static_cast<uint8_t*>(data) + total_read, size - total_read);
-			if (recieved == 0) {
-				throw HW::IOError("End of file reached before reading required number of bytes!");
-			}
-			total_read += recieved;
-		}
-	}
-
 	size_t ConnectionAsync::readToBuffer(size_t size) {
 		if (!isOpened()) {
 			throw HW::DescriptorError("Connection is closed!");
@@ -47,20 +33,6 @@ namespace HW {
 		size_t recieved = read(m_buffer.data() + old_size, size);
 		m_buffer.resize(old_size + recieved);
 		return recieved;
-	}
-	
-	void ConnectionAsync::readExactToBuffer(size_t size) {
-		if (!isOpened()) {
-			throw HW::DescriptorError("Connection is closed!");
-		}
-		size_t total_recieved = 0;
-		while (total_recieved != size) {
-			size_t recieved = readToBuffer(size-total_recieved);
-			if (recieved == 0) {
-				throw HW::IOError("End of file reached before reading required number of bytes!");
-			}
-			total_recieved += recieved;
-		}
 	}
 
 	size_t ConnectionAsync::write(const void *data, size_t size) {
@@ -73,16 +45,6 @@ namespace HW {
 		}
 		else {
 			return static_cast<size_t>(written);
-		}
-	}
-
-	void ConnectionAsync::writeExact(const void *data, size_t size) {
-		if (!isOpened()) {
-			throw HW::DescriptorError("Connection is closed!");
-		}
-		size_t total_written = 0;
-		while (total_written != size) {
-			total_written += write(static_cast<const uint8_t*>(data) + total_written, size - total_written);
 		}
 	}
 

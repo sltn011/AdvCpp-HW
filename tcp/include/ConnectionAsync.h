@@ -30,11 +30,8 @@ namespace HW {
 		ConnectionAsync(ConnectionAsync &&rhs) noexcept = default;
 		int getFD() const;
 		size_t read(void *data, size_t size);
-		void readExact(void *data, size_t size);
 		size_t readToBuffer(size_t size);
-		void readExactToBuffer(size_t size);
 		size_t write(const void *data, size_t size);
-		void writeExact(const void *data, size_t size);
 		void close();
 		bool isOpened() const;
 		void setRecieveTimeout(int seconds);
