@@ -109,7 +109,7 @@ namespace HW {
             throw HW::IOError("Error parsing address!");
         }
         if (::connect(m_socket.getFD(), reinterpret_cast<sockaddr*>(&sock_addr), sizeof(sock_addr)) < 0) {
-            throw HW::NetworkError("Error connecting to " + ip + " " + std::to_string(port));
+            throw HW::NetworkError("Error connecting to " + ip + std::to_string(port));
         }
         m_src_addr = std::make_pair(ip, port);
 
