@@ -7,6 +7,8 @@
 #include <sys/epoll.h>
 #include <functional>
 #include <unordered_map>
+#include <atomic>
+#include <mutex>
 
 namespace HW {
 
@@ -15,11 +17,13 @@ namespace HW {
 
 	class ServerAsync {
 	private:
-		SocketAsync		m_socket;
-		Callback		m_callback;
-		Descriptor		m_epollfd;
-		Connections		m_connections;
-		uint32_t		m_client_events;
+		SocketAsync			m_socket;
+		Callback			m_callback;
+		Descriptor			m_epollfd;
+		Connections			m_connections;
+		uint32_t			m_client_events;
+		std::atomic_bool	m_shutdown;
+		std::mutex			m_mutex;
 		
 		static const size_t m_epollsize = 100;
 
@@ -45,7 +49,7 @@ namespace HW {
 		void accept();
 		void setClientEvents(uint32_t events);
 		
-		void run();
+		void run(int epollTimeout);
 	};
 
 } // HW

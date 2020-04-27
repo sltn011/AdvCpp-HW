@@ -21,6 +21,7 @@ namespace HW {
         Socket &operator=(const Socket &rhs) = delete;
 
         friend class Connection;
+        friend class ConnectionAsync;
 
     public:
         Socket();

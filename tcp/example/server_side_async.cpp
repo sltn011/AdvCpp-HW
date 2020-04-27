@@ -4,39 +4,15 @@
 #include <sys/signal.h>
 #include <memory>
 #include <cstring>
+#include <thread>
+#include <atomic>
 
 using msgSize = uint64_t;
-
-
-class SingletonServer{
-private:
-    std::unique_ptr<HW::ServerAsync> m_server_global;
-    SingletonServer() : m_server_global{new HW::ServerAsync} {}
-    SingletonServer(const SingletonServer &rhs) = delete;
-    SingletonServer &operator=(const SingletonServer &rhs) = delete;
-
-public:
-    static SingletonServer &get_instance() {
-        static SingletonServer server_instance{};
-        return server_instance;
-    }
-
-    HW::ServerAsync &get_global_server() {
-        return *m_server_global;
-    }
-};
-
-
-void sigint_handler(int signal) {
-    std::cout << "\nServer shutdown" << std::endl;
-    SingletonServer::get_instance().get_global_server().close();
-}
-
 
 void callback(HW::ConnectionAsync &c) {
     if (c.isEventSet(EPOLLIN)) {
         try {
-            constexpr msgSize size = (1 << 16);
+            constexpr uint64_t size = (1 << 16);
             msgSize recieved = c.getBuffer().size();
             if (recieved != size) {
                 recieved += c.readToBuffer(size - recieved);
@@ -50,7 +26,9 @@ void callback(HW::ConnectionAsync &c) {
                     c.close();
                     return;
                 }
-                c.write(c.getBuffer().data(), c.getBuffer().size());
+                if (c.isEventSet(EPOLLOUT)) {
+                    c.write(c.getBuffer().data(), c.getBuffer().size());
+                }
                 c.clearBuffer();
             }
         }
@@ -66,16 +44,26 @@ void callback(HW::ConnectionAsync &c) {
 }
 
 int main() {
-    signal(SIGINT, sigint_handler);
+    signal(SIGINT, SIG_IGN);
     try {
-    SingletonServer::get_instance().get_global_server().open("127.1.1.1", 8888);
-    SingletonServer::get_instance().get_global_server().setCallback(callback);
-    SingletonServer::get_instance().get_global_server().setClientEvents(EPOLLIN | EPOLLRDHUP);
-    SingletonServer::get_instance().get_global_server().listen(16);
-    auto[ip, port] = SingletonServer::get_instance().get_global_server().getServerAddress();
-    std::cout << "Server " << ip << " " << std::to_string(port) << " is accepting" << std::endl;
-    SingletonServer::get_instance().get_global_server().run();
-    SingletonServer::get_instance().get_global_server().close();
+        HW::ServerAsync server;
+        server.open("127.1.1.1", 8888);
+        server.setCallback(callback);
+        server.setClientEvents(EPOLLIN | EPOLLOUT | EPOLLRDHUP);
+        server.listen(16);
+        auto[ip, port] = server.getServerAddress();
+        std::cout << "Server " << ip << " " << std::to_string(port) << " is accepting" << std::endl;
+        std::thread run_thread(&HW::ServerAsync::run, std::ref(server), 3000);
+        std::string command;
+        while (std::getline(std::cin, command, '\n')) {
+            if (command == "/exit/") {
+                std::cout << "Closing" << std::endl;
+                server.close();
+                break;
+            }
+        }
+        run_thread.join();
+        return 0;
     }
     catch(HW::BaseException &e) {
         std::cout << e.what() << std::endl;

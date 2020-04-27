@@ -3,10 +3,10 @@
 namespace HW { 
 
 	ServerAsync::ServerAsync()
-	: m_callback{nullptr}, m_client_events{EPOLLRDHUP} {}
+	: m_callback{nullptr}, m_client_events{EPOLLRDHUP}, m_shutdown{false} {}
 
 	ServerAsync::ServerAsync(const Callback callback)
-	: m_callback{callback}, m_client_events{EPOLLRDHUP} {}
+	: m_callback{callback}, m_client_events{EPOLLRDHUP}, m_shutdown{false} {}
 
 	ServerAsync::~ServerAsync() {
 		try {
@@ -78,6 +78,9 @@ namespace HW {
 	}
 
 	void ServerAsync::close() {
+		std::unique_lock<std::mutex> uLock(m_mutex);
+		m_shutdown = true;
+		uLock.unlock();
 		for (auto& c : m_connections) {
 			removeFromEpoll(c.first);
 		}
@@ -139,13 +142,23 @@ namespace HW {
 		m_client_events = events;
 	}
 
-	void ServerAsync::run() {
+	void ServerAsync::run(int epollTimeout) {
+		std::unique_lock<std::mutex> uLock(m_mutex);
+		m_shutdown = false;
+		uLock.unlock();
+
 		std::array<epoll_event, m_epollsize> events;
 		while(true) {
+			uLock.lock();
+			if (m_shutdown) {
+				return;
+			}
+			uLock.unlock();
+
 			if (!isOpened() || !m_epollfd.isOpened()) {
 				break;
 			}
-			int numFDs = epoll_wait(m_epollfd.getFD(), events.data(), m_epollsize, -1);
+			int numFDs = epoll_wait(m_epollfd.getFD(), events.data(), m_epollsize, epollTimeout);
 			if (numFDs < 0) {
 				if (errno == EINTR) {
 					continue;
