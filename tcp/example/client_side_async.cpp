@@ -9,14 +9,14 @@ int main() {
     connection.connect("127.1.1.1", 8888);
     std::string msg;
     std::string buf = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456"; // 32 bits
-    for (int i = 0; i < (25*1024*1024/32); ++i) {
+    for (int i = 0; i < (3*1024*1024/32); ++i) {
         msg += buf;
     }
 
     msgSize msg_size = static_cast<msgSize>(msg.size()); // 25 Mb
     std::cout << "Size of message: " << msg_size << std::endl;
 
-    uint64_t step = (1<<16);
+    uint64_t step = (1<<10);
     msg_size = (msg_size/step + 1) * step;
     msg.resize(msg_size, '\0');
 

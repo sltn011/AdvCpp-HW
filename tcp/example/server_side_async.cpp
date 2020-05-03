@@ -14,16 +14,17 @@ void callback(HW::ConnectionAsync &c) {
     static std::unordered_map<int, size_t> sentBack;
     if (c.isEventSet(EPOLLIN)) {
         try {
-            constexpr uint64_t size = (1 << 16);
+            constexpr uint64_t size = (1 << 10);
             msgSize recieved = c.getBuffer().size();
             if (recieved != size) {
                 recieved += c.readToBuffer(size - recieved);
             }
             if (recieved == size) {
                 std::cout << "Got: " << recieved << std::endl;
-                std::string check_final(sizeof("DISCONNECT") - 1, '\0');
+                constexpr std::string_view final_msg{"DISCONNECT"};
+                std::string check_final(final_msg.size(), '\0');
                 std::memcpy(check_final.data(), c.getBuffer().data(), check_final.size());
-                if (check_final == "DISCONNECT") {
+                if (check_final == final_msg) {
                     std::cout << "Got disconnect message" << std::endl;
                     c.close();
                     return;
