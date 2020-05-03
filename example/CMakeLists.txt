@@ -1,8 +1,11 @@
 # Исполняемые файлы
-add_executable(test_Process test_Process.cpp)
-add_executable(func func.cpp)
+add_executable(client_side client_side.cpp)
+add_executable(server_side server_side.cpp)
+add_executable(client_side_async client_side_async.cpp)
+add_executable(server_side_async server_side_async.cpp)
 
 # Связать цель и библиотеку
-target_link_libraries(test_Process Process)
-target_link_libraries(test_Process Exceptions)
-target_link_libraries(test_Process Descriptor)
+target_link_libraries(client_side tcp)
+target_link_libraries(server_side tcp)
+target_link_libraries(client_side_async tcp)
+target_link_libraries(server_side_async tcpAsync Threads::Threads)
