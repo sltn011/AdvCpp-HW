@@ -6,10 +6,12 @@
 #include <cstring>
 #include <thread>
 #include <atomic>
+#include <string_view>
 
 using msgSize = uint64_t;
 
 void callback(HW::ConnectionAsync &c) {
+    static std::unordered_map<int, size_t> sentBack;
     if (c.isEventSet(EPOLLIN)) {
         try {
             constexpr uint64_t size = (1 << 16);
@@ -27,9 +29,17 @@ void callback(HW::ConnectionAsync &c) {
                     return;
                 }
                 if (c.isEventSet(EPOLLOUT)) {
-                    c.write(c.getBuffer().data(), c.getBuffer().size());
+                    int fd = c.getFD();
+                    if (sentBack.find(fd) == sentBack.end()) {
+                        sentBack[fd] = 0;
+                    }
+                    size_t sent = sentBack[fd];
+                    sentBack[fd] += c.write(c.getBuffer().data() + sent, size-sent);
+                    if (sentBack[fd] == size) {
+                        c.clearBuffer();
+                        sentBack.erase(fd);
+                    }
                 }
-                c.clearBuffer();
             }
         }
         catch(HW::BaseException &e) {
