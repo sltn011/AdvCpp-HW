@@ -44,27 +44,13 @@ namespace HW {
         template<class Type>
         struct allocator{
 			using value_type = Type;
-			using  pointer = Type*;
-			using const_pointer = const Type*;
-			using reference = Type& ;
 
             AllocState *m_state;
 
-            template<class NewType>
-            struct rebind {
-                using other = allocator<NewType>;
-            };
-
-            allocator()
-            : m_state{nullptr} {}
-
-            allocator(AllocState *state)
-            : m_state{state} {}
+            allocator(AllocState &state)
+            : m_state{&state} {}
 
             [[nodiscard]] Type *allocate(std::size_t n) {
-                if (!m_state) {
-                    throw std::bad_alloc{};
-                }
                 if (m_state->m_freeMemBegin + n * sizeof(Type) > m_state->m_freeMemEnd) {
                     throw std::bad_alloc{};
                 }
@@ -74,9 +60,6 @@ namespace HW {
             }
 
             void deallocate(Type *p, std::size_t n) {
-                if (!m_state) {
-                    return;
-                }
                 if (reinterpret_cast<uint8_t*>(p) + sizeof(Type) * n == m_state->m_freeMemBegin) {
                     m_state->m_freeMemBegin = reinterpret_cast<uint8_t*>(p);
                 }
@@ -94,24 +77,12 @@ namespace HW {
 
             template<class OtherType>
             bool operator==(const allocator<OtherType> &rhs) {
-                if (!m_state && !rhs.m_state) {
-                    return true;
-                }
-                if (!m_state || !rhs.m_state) {
-                    return false;
-                }
-                return (m_state == rhs.m_state);
+                return (*m_state == *rhs.m_state);
             }
 
             template<class OtherType>
             bool operator!=(const allocator<OtherType> &rhs) {
-                if (!m_state && !rhs.m_state) {
-                    return false;
-                }
-                if (!m_state || !rhs.m_state) {
-                    return true;
-                }
-                return (m_state != rhs.m_state);
+                return (*m_state != *rhs.m_state);
             }
 
 			~allocator() = default;

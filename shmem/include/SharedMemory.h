@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <unistd.h>
 #include "Semaphore.h"
-#include <iostream>
 
 namespace HW {
 
@@ -15,14 +14,10 @@ namespace HW {
             uint8_t     *m_memBegin;
             uint8_t     *m_memEnd;
             pid_t        m_creatorPID;
-            Semaphore    m_sem;
+            Semaphore   *m_sem;
 
             SharedMemory(std::size_t size);
             ~SharedMemory() noexcept;
-
-            void create(std::size_t size);
-            void destroy();
-
         };
 
     } // shmem

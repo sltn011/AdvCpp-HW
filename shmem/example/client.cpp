@@ -12,19 +12,16 @@ int main()
 		return 1;
 	}
 	else if (pid == 0) {
-		std::cout << map["ABC"] << std::endl;
+		std::cout << "ABC" << " " <<  map["ABC"] << std::endl;
 		map.insert({"123", "1234567891011121314151617181920"});
-		map.set_value({"ABC", "ABBACDDCEFFEGHHGIJJI"});
+		map.set_value({"ABC", "ABBACDDCEFFEGHHGIJJIABBACDDCEFFEGHHGIJJI"});
 	}
 	else {
 		wait(nullptr);
-		for (auto i = map.crbegin(); i != map.crend(); ++i) {
-			std::cout << i->first << " " << i->second << std::endl;
-		}
+		std::cout << "123" << " " << map["123"] << std::endl;
+		std::cout << "ABC" << " " <<  map["ABC"] << std::endl;
 		map.erase("123");
-		for (auto i = map.cbegin(); i != map.cend(); ++i) {
-			std::cout << i->first << " " << i->second << std::endl;
-		}
+		std::cout << "ABC" << " " <<  map["ABC"] << std::endl;
 	}
 	return 0;
 }

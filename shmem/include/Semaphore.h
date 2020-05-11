@@ -13,12 +13,9 @@ namespace HW {
             sem_t *m_sem;
 
         public:
-            Semaphore();
             Semaphore(sem_t *sem, bool shared, int init_val);
             ~Semaphore() noexcept;
 
-            void create(sem_t *sem, bool shared, int init_val);
-            void destroy();
             void wait();
             void post();
         };
