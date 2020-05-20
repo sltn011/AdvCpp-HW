@@ -1,17 +1,20 @@
-#include "HTTP/HTTPMessage.h"
+#include "HTTP/BaseHTTPServer.h"
 #include <iostream>
 
+class Server : public HW::HTTP::BaseHTTPServer {
+public:
+
+};
+
+void foo(HW::ConnectionAsync &c) {}
+
 int main() {
-    HW::HTTP::HTTPRequest request;
-    std::string s = 
-    "GET /rootDesc.xml HTTP/1.1\r\n"
-    "Cache-Control: no-cache\r\n"
-    "Connection: Close\r\n"
-    "Pragma: no-cache\r\n"
-    "Accept: text/xml, application/xml\r\n"
-    "Host: 192.168.1.1:49280\r\n"
-    "\r\n";
-    request.fromString(s);
-    std::cout << request.toString() << "\n\n" << std::endl;
-    std::cout << std::boolalpha << (s == request.toString()) << std::endl;
+    Server s;
+    s.open("127.1.1.1", 8888);
+    s.setCallback(foo);
+    s.listen(5);
+    s.setTimeout(std::chrono::seconds{10});
+    std::thread t(&Server::run, std::ref(s), 3000);
+    t.join();
+    return 0;
 }

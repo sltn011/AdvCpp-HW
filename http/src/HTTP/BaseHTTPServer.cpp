@@ -4,11 +4,19 @@ namespace HW {
 
     namespace HTTP {
 
-        BaseHTTPServer::BaseHTTPServer()
-	    : m_callback{nullptr}, m_client_events{EPOLLRDHUP} {}
+		void signal_handler(int signal) {
+			if (signal == SIGINT && signal == SIGTERM) {
+				BaseHTTPServer::m_shutdown = true;
+			}
+		}
 
-	    BaseHTTPServer::BaseHTTPServer(const Callback callback)
-	    : m_callback{callback}, m_client_events{EPOLLRDHUP} {}
+		std::atomic_bool BaseHTTPServer::m_shutdown = false;
+
+        BaseHTTPServer::BaseHTTPServer()
+	    : m_callback{nullptr}, m_clientEvents{EPOLL_EVENTS}, m_timeout{defTimeout} {}
+
+	    BaseHTTPServer::BaseHTTPServer(const Callback callback, const Timeout timeout)
+	    : m_callback{callback}, m_clientEvents{EPOLL_EVENTS}, m_timeout{timeout} {}
 
 	    BaseHTTPServer::~BaseHTTPServer() {
 	    	try {
@@ -70,9 +78,10 @@ namespace HW {
 	    	if (!success) {
 		    	throw HW::NetworkError("Error accepting connection!");
     		}
-	    	addToEpoll(client_fd, m_client_events);
+	    	addToEpoll(client_fd, m_clientEvents);
     		m_connections[client_fd].setRecieveTimeout(5);
 	    	m_connections[client_fd].setSendTimeout(5);
+			m_idleTime.emplace(std::make_pair(std::chrono::system_clock::now(),client_fd));
     	}
 
     	bool BaseHTTPServer::isOpened() const {
@@ -101,6 +110,10 @@ namespace HW {
     	void BaseHTTPServer::setMaxConnect(const int new_max) {
     		listen(new_max);
     	}
+
+		void BaseHTTPServer::setTimeout(const Timeout timeout) {
+			m_timeout = timeout;
+		}
 
     	void BaseHTTPServer::addToEpoll(int fd, uint32_t events) {
     		if (!m_epollfd.isOpened()) {
@@ -138,8 +151,60 @@ namespace HW {
     	}
 
     	void BaseHTTPServer::setClientEvents(uint32_t events) {
-    		m_client_events = events;
+    		m_clientEvents = (events | EPOLL_EVENTS);
     	}
+
+		void BaseHTTPServer::run(int epollTimeout) {
+			m_shutdown = false;
+
+			std::array<epoll_event, m_epollsize> events;
+			while(true) {
+				if (m_shutdown) {
+					return;
+				}
+				if (!isOpened() || !m_epollfd.isOpened()) {
+					break;
+				}
+				int numFDs = epoll_wait(m_epollfd.getFD(), events.data(), m_epollsize, epollTimeout);
+				if (numFDs < 0) {
+					if (errno == EINTR) {
+						continue;
+					}
+					else {
+						throw HW::DescriptorError("Error getting descriptors from epoll!");
+					}
+				}
+				for (int i = 0; i < numFDs; ++i) {
+					int fd = events.at(i).data.fd;
+					uint32_t connectionEvents = events.at(i).events;
+					if (fd == m_socket.getFD()) {
+						accept();
+					}
+					else {
+						handleConnection(m_connections[fd], connectionEvents);
+						auto t = std::find_if(m_idleTime.begin(), 
+							m_idleTime.end(), 
+							[fd](auto &i) {
+								return i.second == fd; 
+							}
+						);
+						t = m_idleTime.erase(t);
+						m_idleTime.emplace_hint(t, std::make_pair(std::chrono::system_clock::now(), fd));
+					}
+				}
+				for (auto i = m_idleTime.begin(); i != m_idleTime.end(); ++i) {
+					Timeout timeDiff = std::chrono::duration_cast<Timeout>(std::chrono::system_clock::now() - i->first);
+					if (timeDiff > m_timeout) {
+						removeFromEpoll(i->second);
+						m_connections.erase(i->second);
+					}
+					else {
+						m_idleTime.erase(m_idleTime.begin(), i);
+						break;
+					}
+				}
+			}
+		}
 
     } // HTTP
 
