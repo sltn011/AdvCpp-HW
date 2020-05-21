@@ -23,7 +23,7 @@ namespace HW::HTTP {
 	template<class pair>
 	struct cmp {
 		bool operator()(const pair &a, const pair &b) {
-			return (a.first > b.first);
+			return (a.first < b.first);
 		}
 	};
 
