@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 #include <thread>
 #include "coroutines/coroutine.h"
+#include "HTTP/HTTPMessage.h"
 #include <map>
 #include <set>
 #include <chrono>
@@ -17,23 +18,16 @@ namespace HW::HTTP {
 
     using Callback = std::function<void(ConnectionAsync &c)>;
     using Connections = std::unordered_map<int, ConnectionAsync>;
-	using Time_t = std::chrono::time_point<std::chrono::system_clock>;
+	using Time_t = std::chrono::system_clock::time_point;
 	using Timeout = std::chrono::seconds;
-	
-	template<class pair>
-	struct cmp {
-		bool operator()(const pair &a, const pair &b) {
-			return (a.first < b.first);
-		}
-	};
 
 	using ConnTime = std::pair<Time_t, int>;
-	using IdleTime = std::set<ConnTime, cmp<ConnTime>>;
 
-	constexpr uint32_t EPOLL_EVENTS = EPOLLRDHUP | EPOLLET | EPOLLONESHOT;
-	constexpr Timeout defTimeout{600};
+	struct cmp {
+		bool operator()(const ConnTime &a, const ConnTime &b) const;
+	};
 
-	void signal_handler(int signal);
+	using IdleTime = std::set<ConnTime, cmp>;
 
     class BaseHTTPServer {
     protected:
@@ -44,6 +38,7 @@ namespace HW::HTTP {
     	uint32_t			m_clientEvents;
 		IdleTime			m_idleTime;
 		Timeout				m_timeout;
+		std::atomic_bool	m_shutdown;
 
     	static const size_t m_epollsize = 100;
     	BaseHTTPServer(const BaseHTTPServer &rhs) = delete;
@@ -63,14 +58,13 @@ namespace HW::HTTP {
     	void listen(const int queue_size);
     	bool isOpened() const;
     	void close();
+		void shutdown();
     	Address getServerAddress() const;
     	void setMaxConnect(const int new_max);
 		void setTimeout(const Timeout timeout);
     	void accept();
     	void setClientEvents(uint32_t events);
     	void run(int epollTimeout);
-
-		static std::atomic_bool	m_shutdown;
     };
 
 } // HW::HTTP

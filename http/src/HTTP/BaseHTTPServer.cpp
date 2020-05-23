@@ -4,19 +4,18 @@ namespace HW {
 
     namespace HTTP {
 
-		void signal_handler(int signal) {
-			if (signal == SIGINT && signal == SIGTERM) {
-				BaseHTTPServer::m_shutdown = true;
-			}
+		constexpr uint32_t	defEpollEvents	= EPOLLRDHUP | EPOLLET | EPOLLONESHOT;
+		constexpr Timeout	defTimeout		{600};
+
+		bool cmp::operator()(const ConnTime &a, const ConnTime &b) const {
+			return a.first < b.first;
 		}
 
-		std::atomic_bool BaseHTTPServer::m_shutdown = false;
-
         BaseHTTPServer::BaseHTTPServer()
-	    : m_callback{nullptr}, m_clientEvents{EPOLL_EVENTS}, m_timeout{defTimeout} {}
+	    : m_callback{nullptr}, m_clientEvents{defEpollEvents}, m_timeout{defTimeout} {}
 
 	    BaseHTTPServer::BaseHTTPServer(const Callback callback, const Timeout timeout)
-	    : m_callback{callback}, m_clientEvents{EPOLL_EVENTS}, m_timeout{timeout} {}
+	    : m_callback{callback}, m_clientEvents{defEpollEvents}, m_timeout{timeout} {}
 
 	    BaseHTTPServer::~BaseHTTPServer() {
 	    	try {
@@ -45,6 +44,7 @@ namespace HW {
 	    	m_socket.bind(ip, port);
 	    	initEpoll();
 	    	addToEpoll(m_socket.getFD(), EPOLLIN);
+			m_shutdown = false;
 	    }
 
 	    void BaseHTTPServer::listen(const int queue_size) {
@@ -97,6 +97,10 @@ namespace HW {
     		m_socket.close();
     		m_epollfd.close();
     	}
+
+		void BaseHTTPServer::shutdown() {
+			m_shutdown = true;
+		}
 
     	Address BaseHTTPServer::getServerAddress() const {
     		sockaddr_in src_addr{};
@@ -151,12 +155,10 @@ namespace HW {
     	}
 
     	void BaseHTTPServer::setClientEvents(uint32_t events) {
-    		m_clientEvents = (events | EPOLL_EVENTS);
+    		m_clientEvents = (events | defEpollEvents);
     	}
 
 		void BaseHTTPServer::run(int epollTimeout) {
-			m_shutdown = false;
-
 			std::array<epoll_event, m_epollsize> events;
 			while(true) {
 				if (m_shutdown) {
