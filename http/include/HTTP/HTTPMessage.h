@@ -16,7 +16,7 @@ namespace HW::HTTP {
 
     public:
         virtual std::string toString() = 0;
-		virtual void fromString(const std::string &str) = 0;
+        virtual void fromString(const std::string &str) = 0;
 
         void clear();
 
@@ -43,7 +43,7 @@ namespace HW::HTTP {
         HTTPRequest();
         HTTPRequest(const std::string &request);
         std::string toString() override;
-		void fromString(const std::string &str) override;
+        void fromString(const std::string &str) override;
 
         void setHTTPmethod(const std::string &method);
         std::string getHTTPmethod() const;
@@ -62,7 +62,7 @@ namespace HW::HTTP {
         HTTPResponse();
         HTTPResponse(const std::string &response);
         std::string toString() override;
-		void fromString(const std::string &str) override;
+        void fromString(const std::string &str) override;
 
         void setStatusCode(const StatusCode code);
         StatusCode getStatusCode() const;

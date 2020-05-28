@@ -18,6 +18,7 @@ namespace HW {
         ~Descriptor();
         Descriptor(const Descriptor &rhs) = delete;
         Descriptor &operator=(const Descriptor &rhs) = delete;
+        Descriptor(Descriptor &&rhs) = default;
 
         void setFD(int fd);
         void close();

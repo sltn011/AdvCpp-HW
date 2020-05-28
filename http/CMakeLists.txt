@@ -12,7 +12,13 @@ add_library(HTTP STATIC src/HTTP/BaseHTTPServer.cpp src/HTTP/HTTPMessage.cpp src
 add_library(log STATIC src/log/Log.cpp src/log/Loggers.cpp)
 add_library(tcp STATIC src/tcp/ConnectionAsync.cpp src/tcp/SocketAsync.cpp)
 
+add_library(exampleClient STATIC src/tcp/Connection.cpp src/tcp/Socket.cpp)
+
 target_link_libraries(HTTP coroutine data exceptions log pthread tcp)
+target_link_libraries(exampleClient exceptions)
 
 add_executable(test example/main.cpp)
+add_executable(client example/client.cpp)
+
 target_link_libraries(test HTTP)
+target_link_libraries(client exampleClient)

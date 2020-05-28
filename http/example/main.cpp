@@ -1,25 +1,45 @@
 #include "HTTP/BaseHTTPServer.h"
 #include <iostream>
 
-class Server : public HW::HTTP::BaseHTTPServer {
-public:
+using namespace HW::HTTP;
 
+class Server : public BaseHTTPServer {
+public:
+    HTTPResponse onRequest(const HTTPRequest &r) {
+        std::string resp = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nABCDE";
+        return HTTPResponse{resp};
+    }
+
+    Server(size_t numThreads) 
+    : BaseHTTPServer{numThreads}
+    {
+
+    }
 };
 
-void foo(HW::ConnectionAsync &c) {}
-
 int main() {
-    /* Server s;
+    HW::Logger::get_instance().set_global_logger(HW::create_stderr_logger(HW::Level::ALL));
+    Server s(4);
+    auto callback = [&s](HW::ConnectionAsync &c) {
+        std::thread::id t_id = std::this_thread::get_id();
+		std::stringstream ss_t_id;
+		ss_t_id << t_id;
+        if (c.isEventSet(EPOLLIN)) {
+            HW::info("Thread " + ss_t_id.str() + " Reading request from " + std::to_string(c.getFD()));
+            HTTPRequest req = readRequest(c);
+            HW::info("Thread " + ss_t_id.str() + " Handling request from " + std::to_string(c.getFD()));
+            HTTPResponse resp = s.onRequest(req);
+            HW::info("Thread " + ss_t_id.str() + " Writing response to " + std::to_string(c.getFD()));
+            writeResponse(c, resp);
+            if (!req.doKeepAlive()) {
+                c.close();
+            }
+        }
+    };
+    s.setCallback(callback);
+    s.setClientEvents(EPOLLIN | EPOLLET);
     s.open("127.1.1.1", 8888);
-    s.setCallback(foo);
-    s.listen(5);
-    s.setTimeout(std::chrono::seconds{10});
-    std::thread t(&Server::run, std::ref(s), 3000);
-    t.join(); */
-
-    std::string s = "HTTP/1.1 404 Not Found\r\nServer: Apache\r\nContent-Length: 10\r\n\r\n0123456789";
-    HW::HTTP::ConnectionBuffer v(s.begin(), s.end());
-    auto res = HW::HTTP::tryReadResponse(v);
-    std::cout << res.toString() << std::endl;
+    s.listen(10);
+    s.run(5);
     return 0;
 }

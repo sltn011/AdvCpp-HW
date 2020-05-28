@@ -24,36 +24,43 @@ namespace HW {
 
 	void BaseLogger::trace(const std::string & msg)
 	{
+		std::scoped_lock lk(m_mutex);
 		log(msg, Level::TRACE);
 	}
 
 	void BaseLogger::debug(const std::string & msg)
 	{
+		std::scoped_lock lk(m_mutex);
 		log(msg, Level::DEBUG);
 	}
 
 	void BaseLogger::info(const std::string & msg)
 	{
+		std::scoped_lock lk(m_mutex);
 		log(msg, Level::INFO);
 	}
 
 	void BaseLogger::warn(const std::string & msg)
 	{
+		std::scoped_lock lk(m_mutex);
 		log(msg, Level::WARN);
 	}
 
 	void BaseLogger::error(const std::string & msg)
 	{
+		std::scoped_lock lk(m_mutex);
 		log(msg, Level::ERROR);
 	}
 
 	void BaseLogger::fatal(const std::string & msg)
 	{
+		std::scoped_lock lk(m_mutex);
 		log(msg, Level::FATAL);
 	}
 
 	void BaseLogger::set_level(Level level)
 	{
+		std::scoped_lock lk(m_mutex);
 		m_level = level;
 	}
 

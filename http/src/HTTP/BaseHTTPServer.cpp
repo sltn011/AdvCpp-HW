@@ -3,48 +3,42 @@
 namespace HW {
 
     namespace HTTP {
-
-		constexpr uint32_t	defEpollEvents	= EPOLLRDHUP | EPOLLET | EPOLLONESHOT;
-		constexpr Timeout	defTimeout		{600};
+		constexpr uint32_t	serverSocketEvents	= EPOLLIN | EPOLLEXCLUSIVE;
+		constexpr Timeout	defTimeout			{5};
 
 		bool cmp::operator()(const ConnTime &a, const ConnTime &b) const {
 			return a.first < b.first;
 		}
 
-        BaseHTTPServer::BaseHTTPServer()
-	    : m_callback{nullptr}, m_clientEvents{defEpollEvents}, m_timeout{defTimeout} {}
+	    BaseHTTPServer::BaseHTTPServer(size_t numThreads) {
+			size_t maxConcThreads = std::thread::hardware_concurrency();
+			if (numThreads > maxConcThreads || numThreads == 0) {
+				m_num_threads = maxConcThreads;
+			}
+			else {
+				m_num_threads = numThreads;
+			}
+			trace("Number of working threads set to " + std::to_string(m_num_threads));
+			for (size_t i = 0; i < m_num_threads; ++i) {
+				m_thrWorks.emplace_back(m_socket.getFD(), defTimeout);
+			}
+		}
 
-	    BaseHTTPServer::BaseHTTPServer(const Callback callback, const Timeout timeout)
-	    : m_callback{callback}, m_clientEvents{defEpollEvents}, m_timeout{timeout} {}
-
-	    BaseHTTPServer::~BaseHTTPServer() {
-	    	try {
-		    	close();
-		    }
-		    catch (...) {}
-	    }
-
-	    void BaseHTTPServer::initEpoll() {
-		    if (m_epollfd.isOpened()) {
-		    	return;
-		    }
-		    int efd = epoll_create(1);
-		    if (efd < 0) {
-		    	throw HW::DescriptorError("Error creating epoll!");
-		    }
-		    m_epollfd.setFD(efd);
-	    }
+	    BaseHTTPServer::~BaseHTTPServer() {}
 
 	    void BaseHTTPServer::setCallback(Callback callback) {
-	    	m_callback = callback;
+	    	for (auto &t : m_thrWorks) {
+				t.m_callback = callback;
+			}
+			trace("Changed callback");
 	    }
 
 	    void BaseHTTPServer::open(const std::string &ip, const uint16_t port) {
 	    	m_socket.open();
+			trace("Server socket created, fd = " + std::to_string(m_socket.getFD()));
 	    	m_socket.bind(ip, port);
-	    	initEpoll();
-	    	addToEpoll(m_socket.getFD(), EPOLLIN);
-			m_shutdown = false;
+			trace("Address " + ip + ":" + std::to_string(port) + " binded to server socket");
+			info("Server opened with address " + ip + ":" + std::to_string(port));
 	    }
 
 	    void BaseHTTPServer::listen(const int queue_size) {
@@ -52,54 +46,19 @@ namespace HW {
 		    	if (::listen(m_socket.getFD(), queue_size) < 0) {
 		    		throw HW::NetworkError("Error setting socket as listening!");
 		    	}
+				info("Server socket set to listening state with queue size " + std::to_string(queue_size));
 		    }
 	    }
-
-	    void BaseHTTPServer::accept() {
-		    if (!isOpened()) {
-		    	throw HW::NetworkError("Server closed!");
-		    }
-		    sockaddr_in client_addr{};
-		    socklen_t client_addr_size = sizeof(client_addr);
-
-		    int client_fd = ::accept4(m_socket.getFD(), 
-			    reinterpret_cast<sockaddr*>(&client_addr), 
-			    &client_addr_size, 
-			    SOCK_NONBLOCK);
-
-		    if (client_fd < 0) {
-		    	throw HW::NetworkError("Error accepting connection!");
-		    }
-    		std::string client_ip(inet_ntoa(client_addr.sin_addr));
-    		uint16_t client_port = ntohs(client_addr.sin_port);
-		
-	    	bool success;
-    		std::tie(std::ignore, success) = m_connections.try_emplace(client_fd, ConnectionAsync(client_fd));
-	    	if (!success) {
-		    	throw HW::NetworkError("Error accepting connection!");
-    		}
-	    	addToEpoll(client_fd, m_clientEvents);
-    		m_connections[client_fd].setRecieveTimeout(5);
-	    	m_connections[client_fd].setSendTimeout(5);
-			m_idleTime.emplace(std::make_pair(std::chrono::system_clock::now(),client_fd));
-    	}
 
     	bool BaseHTTPServer::isOpened() const {
 	    	return m_socket.isOpened();
 	    }
 
-	    void BaseHTTPServer::close() {
-    		for (auto& c : m_connections) {
-    			removeFromEpoll(c.first);
-    		}
-    		m_connections.clear();
-    		removeFromEpoll(m_socket.getFD());
-    		m_socket.close();
-    		m_epollfd.close();
-    	}
-
 		void BaseHTTPServer::shutdown() {
-			m_shutdown = true;
+			for (auto &t : m_thrWorks) {
+				t.m_shutdown = true;
+			}
+			trace("Server shutdowning");
 		}
 
     	Address BaseHTTPServer::getServerAddress() const {
@@ -111,99 +70,238 @@ namespace HW {
     		return std::make_pair(src_ip, src_port);
     	}
 
-    	void BaseHTTPServer::setMaxConnect(const int new_max) {
+    	void BaseHTTPServer::setMaxConnectQueue(const int new_max) {
     		listen(new_max);
     	}
 
 		void BaseHTTPServer::setTimeout(const Timeout timeout) {
-			m_timeout = timeout;
+			for (auto &t : m_thrWorks) {
+				t.m_timeout = timeout;
+			}
 		}
 
-    	void BaseHTTPServer::addToEpoll(int fd, uint32_t events) {
-    		if (!m_epollfd.isOpened()) {
-    			return;
-    		}
-    		epoll_event e{};
-    		e.events = events;
-    		e.data.fd = fd;
-    		if (epoll_ctl(m_epollfd.getFD(), EPOLL_CTL_ADD, e.data.fd, &e) < 0) {
-    			throw HW::DescriptorError("Error adding connection to epoll!");
-    		}
-    	}
-
-    	void BaseHTTPServer::removeFromEpoll(int fd) {
-    		if (!m_epollfd.isOpened()) {
-    			return;
-    		}
-    		epoll_event e{};
-    		epoll_ctl(m_epollfd.getFD(), EPOLL_CTL_DEL, fd, &e);
-    	}
-
-    	void BaseHTTPServer::handleConnection(ConnectionAsync &c, uint32_t events) {
-    		int fd = c.getFD();
-    		c.setEvent(events);
-    		if (m_callback) {
-    			m_callback(c);
-    		}
-    		if (!c.isOpened() || c.isEventSet(EPOLLERR)) {
-    			removeFromEpoll(fd);
-    			m_connections.erase(fd);
-    		}
-    		else {
-    			c.clearEvents();
-    		}
-    	}
-
     	void BaseHTTPServer::setClientEvents(uint32_t events) {
-    		m_clientEvents = (events | defEpollEvents);
+    		for (auto &t : m_thrWorks) {
+				t.m_clientEvents = events;
+			}
+			trace("Changed events to set for clients");
     	}
 
 		void BaseHTTPServer::run(int epollTimeout) {
-			std::array<epoll_event, m_epollsize> events;
-			while(true) {
-				if (m_shutdown) {
-					return;
+			for (size_t i = 0; i < m_num_threads; ++i) {
+				m_threads.emplace_back(&BaseHTTPServer::ThreadWork::run, std::ref(m_thrWorks[i]), epollTimeout);
+				std::thread::id t_id = m_threads.back().get_id();
+				std::stringstream ss_t_id;
+				ss_t_id << t_id;
+				trace("Thread " + ss_t_id.str() + " created and running");
+			}
+			for (size_t i = 0; i < m_num_threads; ++i) {
+				m_threads[i].join();
+				std::thread::id t_id = m_threads[i].get_id();
+				std::stringstream ss_t_id;
+				ss_t_id << t_id;
+				trace("Thread " + ss_t_id.str() + " joined");
+			}
+		}
+
+		void BaseHTTPServer::ThreadWork::accept() {
+		    sockaddr_in client_addr{};
+		    socklen_t client_addr_size = sizeof(client_addr);
+		    int client_fd = ::accept4(m_server_fd, 
+			    reinterpret_cast<sockaddr*>(&client_addr), 
+			    &client_addr_size, 
+			    SOCK_NONBLOCK
+			);
+		    if (client_fd < 0) {
+				warn("Error accepting connection, errno: " + std::to_string(errno));
+		    	throw HW::NetworkError("Error accepting connection!");
+		    }
+			m_connections.emplace(client_fd, ConnectionAsync(client_fd));
+			addToEpoll(client_fd, m_clientEvents);
+			Coroutine::routine_t r_client = Coroutine::create(m_callback, std::ref(m_connections[client_fd]));
+			m_coroutines.emplace(client_fd, r_client);
+			m_idleTime.emplace(std::make_pair(std::chrono::system_clock::now(), client_fd));
+    	}
+
+		BaseHTTPServer::ThreadWork::ThreadWork(int server_fd, Timeout idle_time)
+		: m_server_fd{server_fd}
+		, m_timeout{idle_time}
+		, m_shutdown{false} {}
+		
+		void BaseHTTPServer::ThreadWork::initEpoll() {
+		    int efd = epoll_create(1);
+			debug("Epoll created");
+		    if (efd < 0) {
+				error("Error creating epoll! errno: " + std::to_string(errno));
+		    	throw HW::DescriptorError("Error creating epoll!");
+		    }
+		    m_epoll.setFD(efd);
+	    }
+
+		void BaseHTTPServer::ThreadWork::addToEpoll(int fd, uint32_t events) {
+    		epoll_event e{};
+    		e.events = events;
+    		e.data.fd = fd;
+    		if (epoll_ctl(m_epoll.getFD(), EPOLL_CTL_ADD, e.data.fd, &e) < 0) {
+    			throw HW::DescriptorError("Error adding connection to epoll!");
+    		}
+			info("Descriptor " + std::to_string(fd) + " added to epoll");
+    	}
+
+		void BaseHTTPServer::ThreadWork::removeFromEpoll(int fd) {
+    		epoll_event e{};
+    		epoll_ctl(m_epoll.getFD(), EPOLL_CTL_DEL, fd, &e);
+			info("Connection " + std::to_string(fd) + " removed from epoll");
+    	}
+
+		void BaseHTTPServer::ThreadWork::handleConnection(int fd, uint32_t events) {
+			std::thread::id t_id = std::this_thread::get_id();
+			std::stringstream ss_t_id;
+			ss_t_id << t_id;
+			debug("Thread " + ss_t_id.str() + " handling connection");
+
+    		m_connections[fd].setEvent(events);
+			Coroutine::routine_t r_id = m_coroutines[fd];
+    		if (m_callback) {
+				trace("Coroutine " + std::to_string(r_id) + " resumed for connection " + std::to_string(fd));
+    			Coroutine::resume(r_id);
+    		}
+			if (!m_connections[fd].isOpened()) {
+				disconnectClient(fd);
+			}
+    		m_connections[fd].clearEvents();
+    	}
+
+		void BaseHTTPServer::ThreadWork::resetConnectionTime(int fd) {
+			auto t = std::find_if(
+				m_idleTime.begin(),
+				m_idleTime.end(),
+				[fd](auto &i) {
+					return i.second == fd; 
 				}
-				if (!isOpened() || !m_epollfd.isOpened()) {
+			);
+			t = m_idleTime.erase(t);
+			m_idleTime.emplace_hint(t, std::make_pair(std::chrono::system_clock::now(), fd));
+			trace("Idle time reseted for connection " + std::to_string(fd));
+		}
+
+		void BaseHTTPServer::ThreadWork::dropTimeoutedConnections() {
+			for (auto i = m_idleTime.begin(); i != m_idleTime.end(); ++i) {
+				Timeout timeDiff = std::chrono::duration_cast<Timeout>(std::chrono::system_clock::now() - i->first);
+				if (timeDiff > m_timeout) {
+					info("Connection " + std::to_string(i->second) + " timeouted");
+					disconnectClient(i->second);
+				}
+				else {
+					m_idleTime.erase(m_idleTime.begin(), i);
 					break;
 				}
-				int numFDs = epoll_wait(m_epollfd.getFD(), events.data(), m_epollsize, epollTimeout);
-				if (numFDs < 0) {
-					if (errno == EINTR) {
+			}
+		}
+
+		void BaseHTTPServer::ThreadWork::disconnectClient(int fd) {
+			removeFromEpoll(fd);
+			m_connections[fd].close();
+			trace("Connection " + std::to_string(fd) + " closed");
+			m_connections.erase(fd);
+			trace("Connection " + std::to_string(fd) + " removed from server");
+			m_coroutines.erase(fd);
+			trace("Coroutined for connection " + std::to_string(fd) + " removed");
+		}
+
+		void BaseHTTPServer::ThreadWork::run(int epollTimeout) {
+			std::thread::id t_id = std::this_thread::get_id();
+			std::stringstream ss_t_id;
+			ss_t_id << t_id;
+			info("Thread " + ss_t_id.str() + " working");
+
+			initEpoll();
+			addToEpoll(m_server_fd, serverSocketEvents);
+			m_shutdown = false;
+
+			try {
+				while (!m_shutdown) {
+					if (!m_epoll.isOpened()) {
+						return;
+					}
+					int numFDs = epoll_wait(m_epoll.getFD(), m_events.data(), m_epollsize, epollTimeout);
+					if (numFDs == 0) {
 						continue;
 					}
-					else {
-						throw HW::DescriptorError("Error getting descriptors from epoll!");
+					if (numFDs < 0) {
+						if (errno == EINTR) {
+							continue;
+						}
+						else {
+							throw HW::DescriptorError("Error getting descriptors from epoll!");
+						}
 					}
-				}
-				for (int i = 0; i < numFDs; ++i) {
-					int fd = events.at(i).data.fd;
-					uint32_t connectionEvents = events.at(i).events;
-					if (fd == m_socket.getFD()) {
-						accept();
-					}
-					else {
-						handleConnection(m_connections[fd], connectionEvents);
-						auto t = std::find_if(m_idleTime.begin(), 
-							m_idleTime.end(), 
-							[fd](auto &i) {
-								return i.second == fd; 
+					debug("Thread " + ss_t_id.str() + " woke up");
+					for (int i = 0; i < numFDs; ++i) {
+						int fd = m_events.at(i).data.fd;
+						uint32_t connectionEvents = m_events.at(i).events;
+						if (fd == m_server_fd) {
+							accept();
+						}
+						else {
+							handleConnection(fd, connectionEvents);
+							if(m_connections.find(fd) != m_connections.end()) {
+								resetConnectionTime(fd);
 							}
-						);
-						t = m_idleTime.erase(t);
-						m_idleTime.emplace_hint(t, std::make_pair(std::chrono::system_clock::now(), fd));
+						}
+					}
+					dropTimeoutedConnections();
+				}
+			}
+			catch (BaseException &e) {
+				for(auto& d : m_connections) {
+					disconnectClient(d.first);
+				}
+				error("Thread " + ss_t_id.str() + " finished working with error " + e.what());
+				return;
+			}
+			for(auto& d : m_connections) {
+				disconnectClient(d.first);
+			}
+			info("Thread " + ss_t_id.str() + " finished working");
+		}
+
+		HTTPRequest readRequest(ConnectionAsync &c) {
+			while (true) {
+				try {
+					size_t recieved = c.readToBuffer(256);
+					trace("Read " + std::to_string(recieved) + " from connection " + std::to_string(c.getFD()));
+				}
+				catch(BaseException &e) {
+					if (errno != EAGAIN) {
+						throw;
+					}
+					try {
+						std::string req(c.getBuffer().begin(), c.getBuffer().end());
+						return HTTPRequest{req};
+					}
+					catch(BaseException &e) {
+						trace("Mot full request recieved from " + std::to_string(c.getFD()) + ". Yielding");
+						Coroutine::yield();
 					}
 				}
-				for (auto i = m_idleTime.begin(); i != m_idleTime.end(); ++i) {
-					Timeout timeDiff = std::chrono::duration_cast<Timeout>(std::chrono::system_clock::now() - i->first);
-					if (timeDiff > m_timeout) {
-						removeFromEpoll(i->second);
-						m_connections.erase(i->second);
+			}
+		}
+
+		void writeResponse(ConnectionAsync &c, HTTPResponse &resp) {
+			std::string msg = resp.toString();
+			while (msg.size() != 0) {
+				try {
+					size_t sent = c.write(msg.data(), msg.size());
+					trace("Wrote " + std::to_string(sent) + " to connection " + std::to_string(c.getFD()));
+					msg.erase(0, sent);
+				}
+				catch (BaseException &e) {
+					if (errno != EAGAIN) {
+						throw;
 					}
-					else {
-						m_idleTime.erase(m_idleTime.begin(), i);
-						break;
-					}
+					trace("Mot full request sent to " + std::to_string(c.getFD()) + ". Yielding");
+					Coroutine::yield();
 				}
 			}
 		}

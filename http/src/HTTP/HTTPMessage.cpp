@@ -1,4 +1,5 @@
 #include "HTTP/HTTPMessage.h"
+#include <iostream>
 
 namespace HW::HTTP {
 
@@ -86,21 +87,21 @@ namespace HW::HTTP {
 		
 		end = line.find(" ", begin);
 		if (end == std::string::npos) {
-            throw HW::ArgumentError{ "Invalid string passed!" };
+            throw HW::ArgumentError{ "Method: Invalid string passed!" };
         }
 		setHTTPmethod(line.substr(begin, end - begin));
 
 		begin = end + 1;
 		end = line.find(" ", begin);
         if (end == std::string::npos) {
-            throw HW::ArgumentError{ "Invalid string passed!" };
+            throw HW::ArgumentError{ "Target: Invalid string passed!" };
         }
 		setRequestTarget(line.substr(begin, end - begin));
 
 		begin = end + 1;
 		begin = line.find("/", begin);
 		if (begin == std::string::npos) {
-            throw HW::ArgumentError{ "Invalid string passed!" };
+            throw HW::ArgumentError{ "Version: Invalid string passed!" };
         }
 		begin += 1;
 		setHTTPversion(line.substr(begin, line.size() - begin));
@@ -114,13 +115,13 @@ namespace HW::HTTP {
 		while (line.size() != 0) {
 			size_t p = line.find(": ");
             if (p == std::string::npos) {
-                throw HW::ArgumentError{ "Invalid string passed!" };
+                throw HW::ArgumentError{ "Header: Invalid string passed!" };
             }
             addHeaderLine(line.substr(0, p), line.substr(p + 2, line.size()));
 			begin += line.size() + 2;
 			end = str.find("\r\n", begin);
 			if (end == std::string::npos) {
-                throw HW::ArgumentError{ "Invalid string passed!" };
+                throw HW::ArgumentError{ "Header Info: Invalid string passed!" };
             }
 			line = str.substr(begin, end - begin);
 		}
@@ -130,7 +131,7 @@ namespace HW::HTTP {
             size_t bodySize = 0;
             sscanf(m_headers[Request::ContentLength].c_str(), "%zd", &bodySize);
             if (str.size() - begin != bodySize) {
-                throw HW::ArgumentError{ "Invalid string passed!" };
+                throw HW::ArgumentError{ "Body: Invalid string passed!" };
             }
             setBody(str.substr(begin, bodySize));
         }

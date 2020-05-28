@@ -16,9 +16,6 @@ namespace HW {
 		}
 		ssize_t recieved = ::read(m_socket.getFD(), data, size);
 		if (recieved < 0) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				return 0;
-			}
 			throw HW::IOError("Error reading from process!");
 		}
 		else if (recieved == 0) {
@@ -33,7 +30,14 @@ namespace HW {
 		}
 		size_t old_size = m_buffer.size();
 		m_buffer.resize(old_size + size);
-		size_t recieved = read(m_buffer.data() + old_size, size);
+		size_t recieved = 0;
+		try {
+			recieved = read(m_buffer.data() + old_size, size);
+		}
+		catch(BaseException &e) {
+			m_buffer.resize(old_size);
+			throw;
+		}
 		m_buffer.resize(old_size + recieved);
 		return recieved;
 	}

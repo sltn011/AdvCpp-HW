@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <memory>
+#include <mutex>
 #include "log/LogFormat.h"
 
 namespace HW {
@@ -29,7 +30,8 @@ namespace HW {
 
 	class BaseLogger {
 	protected:
-		Level m_level;
+		Level		m_level;
+		std::mutex	m_mutex;
 		virtual void log(const std::string &msg, Level level) = 0;
 
 	public:

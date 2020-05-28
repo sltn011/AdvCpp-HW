@@ -11,7 +11,7 @@ struct Routine;
 namespace
 {
 
-struct Ordinator
+thread_local struct Ordinator
 {
 	static constexpr size_t STACK_SIZE = 1 << 16;
 
