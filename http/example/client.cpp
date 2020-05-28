@@ -11,71 +11,43 @@ int main() {
     try {
     while (true) {
     HW::Connection
-        connection1, connection2, connection3,
-        connection4, connection5, connection6,
-        connection7, connection8, connection9;
+        connection1, connection2, connection3, connection4;
     
             connection1.connect("127.1.1.1", 8888);
-            connection2.connect("127.1.1.1", 8888);
+            /* connection2.connect("127.1.1.1", 8888);
             connection3.connect("127.1.1.1", 8888);
-            connection4.connect("127.1.1.1", 8888);
-            connection5.connect("127.1.1.1", 8888);
-            connection6.connect("127.1.1.1", 8888);
-            connection7.connect("127.1.1.1", 8888);
-            connection8.connect("127.1.1.1", 8888);
-            connection9.connect("127.1.1.1", 8888);
+            connection4.connect("127.1.1.1", 8888); */
 
             std::string s = "POST / HTTP/1.1\r\nServer: Apache\r\nContent-Length: 12\r\n\r\nABCDEFGHIJKL";
 
+            std::cout << "Write 1" << std::endl;
             connection1.writeExact(s.data(), s.size());
+            /* std::cout << "Write 2" << std::endl;
             connection2.writeExact(s.data(), s.size());
+            std::cout << "Write 3" << std::endl;
             connection3.writeExact(s.data(), s.size());
-            connection4.writeExact(s.data(), s.size());
-            connection5.writeExact(s.data(), s.size());
-            connection6.writeExact(s.data(), s.size());
-            connection7.writeExact(s.data(), s.size());
-            connection8.writeExact(s.data(), s.size());
-            connection9.writeExact(s.data(), s.size());
+            std::cout << "Write 4" << std::endl;
+            connection4.writeExact(s.data(), s.size()); */
 
             std::string answer1(1024, '\0');
-            std::string answer2(1024, '\0');
+            /* std::string answer2(1024, '\0');
             std::string answer3(1024, '\0');
-            std::string answer4(1024, '\0');
-            std::string answer5(1024, '\0');
-            std::string answer6(1024, '\0');
-            std::string answer7(1024, '\0');
-            std::string answer8(1024, '\0');
-            std::string answer9(1024, '\0');
+            std::string answer4(1024, '\0'); */
 
-            connection1.read(answer1.data(), 1024);
-            connection2.read(answer2.data(), 1024);
-            connection3.read(answer3.data(), 1024);
-            connection4.read(answer4.data(), 1024);
-            connection5.read(answer5.data(), 1024);
-            connection6.read(answer6.data(), 1024);
-            connection7.read(answer7.data(), 1024);
-            connection8.read(answer8.data(), 1024);
-            connection9.read(answer9.data(), 1024);
+            std::cout << "Read 1 " << connection1.read(answer1.data(), 1024) << std::endl;
+            /* std::cout << "Read 2 " << connection2.read(answer2.data(), 1024) << std::endl;
+            std::cout << "Read 3 " << connection3.read(answer3.data(), 1024) << std::endl;
+            std::cout << "Read 4 " << connection4.read(answer4.data(), 1024) << std::endl; */
 
-            std::cout << answer1 << "\n" << std::endl;
+            /* std::cout << answer1 << "\n" << std::endl;
             std::cout << answer2 << "\n" << std::endl;
             std::cout << answer3 << "\n" << std::endl;
-            std::cout << answer4 << "\n" << std::endl;
-            std::cout << answer5 << "\n" << std::endl;
-            std::cout << answer6 << "\n" << std::endl;
-            std::cout << answer7 << "\n" << std::endl;
-            std::cout << answer8 << "\n" << std::endl;
-            std::cout << answer9 << "\n" << std::endl;
+            std::cout << answer4 << "\n" << std::endl; */
 
             connection1.close();
-            connection2.close();
+            /* connection2.close();
             connection3.close();
-            connection4.close();
-            connection5.close();
-            connection6.close();
-            connection7.close();
-            connection8.close();
-            connection9.close();
+            connection4.close(); */
 
             std::cout << ++cnt <<  " ==================================" << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds{2});

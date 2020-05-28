@@ -19,7 +19,7 @@ public:
 
 int main() {
     HW::Logger::get_instance().set_global_logger(HW::create_stderr_logger(HW::Level::ALL));
-    Server s(1);
+    Server s(4);
     auto callback = [&s](HW::ConnectionAsync &c) {
         std::thread::id t_id = std::this_thread::get_id();
 		std::stringstream ss_t_id;
@@ -28,16 +28,18 @@ int main() {
             HW::info("Thread " + ss_t_id.str() + " Reading request from " + std::to_string(c.getFD()));
             HTTPRequest req = readRequest(c);
             HW::info("Thread " + ss_t_id.str() + " Handling request from " + std::to_string(c.getFD()));
-            HTTPResponse resp = s.onRequest(req);
-            HW::info("Thread " + ss_t_id.str() + " Writing response to " + std::to_string(c.getFD()));
-            writeResponse(c, resp);
+            if (c.isEventSet(EPOLLOUT)) {
+                HTTPResponse resp = s.onRequest(req);
+                HW::info("Thread " + ss_t_id.str() + " Writing response to " + std::to_string(c.getFD()));
+                writeResponse(c, resp);
+            }
             if (!req.doKeepAlive()) {
                 c.close();
             }
         }
     };
     s.setCallback(callback);
-    s.setClientEvents(EPOLLIN | EPOLLET);
+    s.setClientEvents(EPOLLIN | EPOLLOUT | EPOLLET);
     s.open("127.1.1.1", 8888);
     s.listen(20);
     s.run(2);

@@ -4,7 +4,7 @@ namespace HW {
 
     namespace HTTP {
 		constexpr uint32_t	serverSocketEvents	= EPOLLIN | EPOLLEXCLUSIVE;
-		constexpr Timeout	defTimeout			{5};
+		constexpr Timeout	defTimeout			{10};
 
 		bool cmp::operator()(const ConnTime &a, const ConnTime &b) const {
 			return a.first < b.first;
@@ -256,8 +256,8 @@ namespace HW {
 			addToEpoll(m_server_fd, serverSocketEvents);
 			m_shutdown = false;
 
-			try {
-				while (!m_shutdown) {
+			while (!m_shutdown) {
+				try {
 					if (!m_epoll.isOpened()) {
 						return;
 					}
@@ -292,14 +292,10 @@ namespace HW {
 					}
 					dropTimeoutedConnections();
 				}
-			}
-			catch (std::exception &e) {
-				for(auto& d : m_connections) {
-					disconnectClient(d.first);
+				catch (HW::BaseException &e) {
+					warn("Thread " + ss_t_id.str() + " got an error " + e.what() + " errno:" + std::to_string(errno));
+					continue;
 				}
-				error("Thread " + ss_t_id.str() + " finished working with error " + 
-					e.what() + " errno: " + std::to_string(errno));
-				return;
 			}
 			for(auto& d : m_connections) {
 				disconnectClient(d.first);
@@ -314,7 +310,7 @@ namespace HW {
 					trace("Read " + std::to_string(recieved) + " from connection " + std::to_string(c.getFD()));
 				}
 				catch(BaseException &e) {
-					if (errno != EAGAIN) {
+					if (errno != EAGAIN && errno != EWOULDBLOCK) {
 						throw;
 					}
 					try {
@@ -324,6 +320,7 @@ namespace HW {
 					catch(BaseException &e) {
 						trace("Mot full request recieved from " + std::to_string(c.getFD()) + ". Yielding");
 						Coroutine::yield();
+						continue;
 					}
 				}
 			}
@@ -331,6 +328,7 @@ namespace HW {
 
 		void writeResponse(ConnectionAsync &c, HTTPResponse &resp) {
 			std::string msg = resp.toString();
+			size_t msg_size = msg.size();
 			while (msg.size() != 0) {
 				try {
 					size_t sent = c.write(msg.data(), msg.size());
@@ -338,11 +336,13 @@ namespace HW {
 					msg.erase(0, sent);
 				}
 				catch (BaseException &e) {
-					if (errno != EAGAIN) {
+					if (errno != EAGAIN && errno != EWOULDBLOCK) {
 						throw;
 					}
-					trace("Mot full request sent to " + std::to_string(c.getFD()) + ". Yielding");
+					trace("Not full request sent to " + std::to_string(c.getFD()) +
+					" Only sent " + std::to_string(msg_size - msg.size()) + " of " + std::to_string(msg_size) + ". Yielding");
 					Coroutine::yield();
+					continue;
 				}
 			}
 		}
