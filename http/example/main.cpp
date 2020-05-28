@@ -19,7 +19,7 @@ public:
 
 int main() {
     HW::Logger::get_instance().set_global_logger(HW::create_stderr_logger(HW::Level::ALL));
-    Server s(4);
+    Server s(1);
     auto callback = [&s](HW::ConnectionAsync &c) {
         std::thread::id t_id = std::this_thread::get_id();
 		std::stringstream ss_t_id;
@@ -39,7 +39,7 @@ int main() {
     s.setCallback(callback);
     s.setClientEvents(EPOLLIN | EPOLLET);
     s.open("127.1.1.1", 8888);
-    s.listen(10);
-    s.run(5);
+    s.listen(20);
+    s.run(2);
     return 0;
 }

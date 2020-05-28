@@ -44,6 +44,10 @@ namespace HW {
 	    void BaseHTTPServer::listen(const int queue_size) {
 	    	if (isOpened()) {
 		    	if (::listen(m_socket.getFD(), queue_size) < 0) {
+					std::thread::id t_id = std::this_thread::get_id();
+					std::stringstream ss_t_id;
+					ss_t_id << t_id;
+					error("Thread " + ss_t_id.str() + " Error setting socket as listening! errno:" + std::to_string(errno));
 		    		throw HW::NetworkError("Error setting socket as listening!");
 		    	}
 				info("Server socket set to listening state with queue size " + std::to_string(queue_size));
@@ -113,7 +117,10 @@ namespace HW {
 			    SOCK_NONBLOCK
 			);
 		    if (client_fd < 0) {
-				warn("Error accepting connection, errno: " + std::to_string(errno));
+				std::thread::id t_id = std::this_thread::get_id();
+				std::stringstream ss_t_id;
+				ss_t_id << t_id;
+				warn("Thread " + ss_t_id.str() + " Error accepting connection! errno:" + std::to_string(errno));
 		    	throw HW::NetworkError("Error accepting connection!");
 		    }
 			m_connections.emplace(client_fd, ConnectionAsync(client_fd));
@@ -127,12 +134,24 @@ namespace HW {
 		: m_server_fd{server_fd}
 		, m_timeout{idle_time}
 		, m_shutdown{false} {}
+
+		BaseHTTPServer::ThreadWork::~ThreadWork() {
+			try {
+				for(auto& d : m_connections) {
+					disconnectClient(d.first);
+				}
+			}
+			catch(...) {}
+		}
 		
 		void BaseHTTPServer::ThreadWork::initEpoll() {
 		    int efd = epoll_create(1);
 			debug("Epoll created");
 		    if (efd < 0) {
-				error("Error creating epoll! errno: " + std::to_string(errno));
+				std::thread::id t_id = std::this_thread::get_id();
+				std::stringstream ss_t_id;
+				ss_t_id << t_id;
+				error("Thread " + ss_t_id.str() + " Error creating epoll! errno:" + std::to_string(errno));
 		    	throw HW::DescriptorError("Error creating epoll!");
 		    }
 		    m_epoll.setFD(efd);
@@ -143,6 +162,11 @@ namespace HW {
     		e.events = events;
     		e.data.fd = fd;
     		if (epoll_ctl(m_epoll.getFD(), EPOLL_CTL_ADD, e.data.fd, &e) < 0) {
+				std::thread::id t_id = std::this_thread::get_id();
+				std::stringstream ss_t_id;
+				ss_t_id << t_id;
+				error("Thread " + ss_t_id.str() + "Error adding connection to epoll! efd:" +
+						std::to_string(m_epoll.getFD()) + " fd:" + std::to_string(fd));
     			throw HW::DescriptorError("Error adding connection to epoll!");
     		}
 			info("Descriptor " + std::to_string(fd) + " added to epoll");
@@ -158,7 +182,7 @@ namespace HW {
 			std::thread::id t_id = std::this_thread::get_id();
 			std::stringstream ss_t_id;
 			ss_t_id << t_id;
-			debug("Thread " + ss_t_id.str() + " handling connection");
+			debug("Thread " + ss_t_id.str() + " handling connection " + std::to_string(fd));
 
     		m_connections[fd].setEvent(events);
 			Coroutine::routine_t r_id = m_coroutines[fd];
@@ -167,9 +191,13 @@ namespace HW {
     			Coroutine::resume(r_id);
     		}
 			if (!m_connections[fd].isOpened()) {
+				info("Disconnecting " + std::to_string(fd));
 				disconnectClient(fd);
 			}
-    		m_connections[fd].clearEvents();
+    		else {
+				m_connections[fd].clearEvents();
+			}
+			debug("Thread " + ss_t_id.str() + " finished handling connection " + std::to_string(fd));
     	}
 
 		void BaseHTTPServer::ThreadWork::resetConnectionTime(int fd) {
@@ -207,6 +235,15 @@ namespace HW {
 			trace("Connection " + std::to_string(fd) + " removed from server");
 			m_coroutines.erase(fd);
 			trace("Coroutined for connection " + std::to_string(fd) + " removed");
+			auto t = std::find_if(
+				m_idleTime.begin(),
+				m_idleTime.end(),
+				[fd](auto &i) {
+					return i.second == fd; 
+				}
+			);
+			m_idleTime.erase(t);
+			trace("Connection " + std::to_string(fd) + " removed from timeout");
 		}
 
 		void BaseHTTPServer::ThreadWork::run(int epollTimeout) {
@@ -233,6 +270,7 @@ namespace HW {
 							continue;
 						}
 						else {
+							error("Error getting descriptor from epoll " + std::to_string(m_epoll.getFD()));
 							throw HW::DescriptorError("Error getting descriptors from epoll!");
 						}
 					}
@@ -241,7 +279,9 @@ namespace HW {
 						int fd = m_events.at(i).data.fd;
 						uint32_t connectionEvents = m_events.at(i).events;
 						if (fd == m_server_fd) {
+							debug("Thread " + ss_t_id.str() + " accepting");
 							accept();
+							debug("Thread " + ss_t_id.str() + " finished accepting");
 						}
 						else {
 							handleConnection(fd, connectionEvents);
@@ -253,11 +293,12 @@ namespace HW {
 					dropTimeoutedConnections();
 				}
 			}
-			catch (BaseException &e) {
+			catch (std::exception &e) {
 				for(auto& d : m_connections) {
 					disconnectClient(d.first);
 				}
-				error("Thread " + ss_t_id.str() + " finished working with error " + e.what());
+				error("Thread " + ss_t_id.str() + " finished working with error " + 
+					e.what() + " errno: " + std::to_string(errno));
 				return;
 			}
 			for(auto& d : m_connections) {

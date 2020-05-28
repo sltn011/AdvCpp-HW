@@ -94,6 +94,8 @@ namespace HW::HTTP {
 		ThreadWork(const ThreadWork &rhs) = delete;
 		ThreadWork &operator=(const ThreadWork &rhs) = delete;
 		ThreadWork(ThreadWork &&rhs) = default;
+		~ThreadWork();
+
 		void run(int epoll_timeout);
 	};
 
