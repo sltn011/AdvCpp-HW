@@ -22,8 +22,8 @@ int main() {
     Server s(4);
     auto callback = [&s](HW::ConnectionAsync &c) {
         std::thread::id t_id = std::this_thread::get_id();
-		std::stringstream ss_t_id;
-		ss_t_id << t_id;
+        std::stringstream ss_t_id;
+        ss_t_id << t_id;
         if (c.isEventSet(EPOLLIN)) {
             HW::info("Thread " + ss_t_id.str() + " Reading request from " + std::to_string(c.getFD()));
             HTTPRequest req = readRequest(c);
