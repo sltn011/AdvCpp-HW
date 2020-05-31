@@ -6,8 +6,12 @@ using namespace HW::HTTP;
 class Server : public BaseHTTPServer {
 public:
     HTTPResponse onRequest(const HTTPRequest &r) {
-        std::string resp = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nABCDE";
-        return HTTPResponse{resp};
+        std::string msg = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nABCDE";
+        HTTPResponse resp{msg};
+        if (r.doKeepAlive()) {
+            resp.addHeaderLine(Response::Connection, "Keep-Alive");
+        }
+        return resp;
     }
 
     Server(size_t numThreads) 
@@ -20,28 +24,8 @@ public:
 int main() {
     HW::Logger::get_instance().set_global_logger(HW::create_stderr_logger(HW::Level::ALL));
     Server s(4);
-    auto callback = [&s](HW::ConnectionAsync &c) {
-        std::thread::id t_id = std::this_thread::get_id();
-        std::stringstream ss_t_id;
-        ss_t_id << t_id;
-        if (c.isEventSet(EPOLLIN)) {
-            HW::info("Thread " + ss_t_id.str() + " Reading request from " + std::to_string(c.getFD()));
-            HTTPRequest req = readRequest(c);
-            HW::info("Thread " + ss_t_id.str() + " Handling request from " + std::to_string(c.getFD()));
-            if (c.isEventSet(EPOLLOUT)) {
-                HTTPResponse resp = s.onRequest(req);
-                HW::info("Thread " + ss_t_id.str() + " Writing response to " + std::to_string(c.getFD()));
-                writeResponse(c, resp);
-            }
-            if (!req.doKeepAlive()) {
-                c.close();
-            }
-        }
-    };
-    s.setCallback(callback);
-    s.setClientEvents(EPOLLIN | EPOLLOUT | EPOLLET);
     s.open("127.1.1.1", 8888);
-    s.listen(20);
-    s.run(2);
+    s.listen(1000);
+    s.run(5000);
     return 0;
 }

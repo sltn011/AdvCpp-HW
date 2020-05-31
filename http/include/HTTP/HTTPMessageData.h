@@ -116,7 +116,7 @@ namespace HW::HTTP {
         NetworkConnectTimeoutError      = 599
     };
 
-    std::string getCodeMessage(const StatusCode code);
+	std::string getCodeMessage(const StatusCode code);
 
     namespace Request {
 
