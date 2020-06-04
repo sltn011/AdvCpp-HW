@@ -9,11 +9,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Use ./fileGenerator NUM_ENTRIES\n");
     }
     uint64_t numEntries;
-    constexpr HW::File::Data msg{'A', 'B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T'};
+    constexpr char msg[] = "ABCDEFGHIJKLMNOPQRST";
     sscanf(argv[1], "%" SCNu64, &numEntries);
     std::ofstream f("data.bin", std::ios::binary);
     HW::File::Entry entry;
-    memcpy(entry.m_data, msg, sizeof(entry.m_data));
+    memcpy(entry.m_data, msg, strlen(msg));
     for (HW::File::Key i = 0; i < numEntries; ++i) {
         entry.m_key = i;
         f.write(reinterpret_cast<char*>(&entry), sizeof(entry));
