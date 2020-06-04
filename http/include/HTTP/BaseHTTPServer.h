@@ -38,12 +38,12 @@ namespace HW::HTTP {
     protected:
         class ThreadWork;
 
-        SocketAsync                 m_socket;
-        std::vector<ThreadWork>     m_threads;
+        SocketAsync                    m_socket;
+        std::vector<ThreadWork>        m_threads;
         Timeout                     m_timeout;
         std::atomic_bool            m_shutdown;
 
-        static const size_t m_epollsize = 100;
+        static const size_t m_epollsize = 10000;
         BaseHTTPServer(const BaseHTTPServer &rhs) = delete;
         BaseHTTPServer &operator=(const BaseHTTPServer &rhs) = delete;
 

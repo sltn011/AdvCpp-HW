@@ -2,13 +2,14 @@
 #define HW_CONNECTION_ASYNC_H
 
 #include "tcp/SocketAsync.h"
+#include "HTTP/HTTPMessage.h"
 #include <string>
 #include <vector>
 
 namespace HW {
 
-    using Address =   std::pair<std::string, uint16_t>;
-    using Buffer =    std::vector<uint8_t>;
+    using Address = std::pair<std::string, uint16_t>;
+    using Buffer = std::vector<uint8_t>;
 
     class ConnectionAsync {
     private:
