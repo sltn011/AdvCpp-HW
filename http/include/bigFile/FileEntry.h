@@ -8,7 +8,7 @@ namespace HW::File{
     using Key = uint64_t;
     using Data = char[20];
 
-    struct Entry {
+    struct __attribute__((packed)) Entry {
         Key m_key;
         Data m_data;
     };

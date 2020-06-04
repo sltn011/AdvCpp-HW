@@ -9,9 +9,9 @@ class Server : public BaseHTTPServer {
     Reader<Entry> m_reader;
 
 public:
-    Server(std::string filePath, size_t numThreads)
+    Server(std::string filePath, size_t blockSize, size_t numThreads)
     : BaseHTTPServer{numThreads}
-    , m_reader{filePath, false} {}
+    , m_reader{filePath, blockSize, 32, false} {}
 
     HTTPResponse onRequest(const HTTPRequest &req) {
         static const std::string reqFormat = "/?entry=x";
@@ -46,14 +46,13 @@ public:
         response.erase(0, sizeof(Key));
         resp.setStatusCode(StatusCode::OK);
         resp.setBody(std::to_string(answerKey) + " " + response);
-        std::cout << resp.toString();
         return resp;
     }
 };
 
 int main() {
     HW::Logger::get_instance().set_global_logger(HW::create_stderr_logger(HW::Level::ALL));
-    Server s("data.bin", 4);
+    Server s("data.bin", 32, 4);
     s.open("127.1.1.1", 8888);
     s.listen(1000);
     s.run(5000);

@@ -13,13 +13,14 @@ namespace HW::File{
     class Mmap {
     private:
         void *m_data;
-        size_t m_size;
+        uint64_t m_size;
 
     public:
         Mmap(std::string &file, bool isShared);
         ~Mmap();
         void *getData() const;
-        size_t getSize() const;
+        void *end() const;
+        uint64_t getSize() const;
     };
 
 } // HW::File

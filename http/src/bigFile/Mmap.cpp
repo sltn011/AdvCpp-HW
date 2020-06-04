@@ -32,7 +32,11 @@ namespace HW::File{
         return m_data;
     }
 
-    size_t Mmap::getSize() const {
+    void *Mmap::end() const {
+        return (static_cast<uint8_t*>(m_data) + m_size);
+    }
+
+    uint64_t Mmap::getSize() const {
         return m_size;
     }
 
