@@ -9,52 +9,52 @@ namespace HW {
 
     size_t Connection::read(void *data, size_t size) {
         if (!isOpened()) {
-			throw HW::DescriptorError("Connection is closed!");
-		}
+            throw HW::DescriptorError("Connection is closed!");
+        }
         ssize_t recieved = ::read(m_socket.getFD(), data, size);
-		if (recieved < 0) {
-			throw HW::IOError("Error reading from process!");
-		}
-		else {
-			return static_cast<size_t>(recieved);
-		}
+        if (recieved < 0) {
+            throw HW::IOError("Error reading from process!");
+        }
+        else {
+            return static_cast<size_t>(recieved);
+        }
     }
 
     void Connection::readExact(void *data, size_t size) {
         if (!isOpened()) {
-			throw HW::DescriptorError("Connection is closed!");
-		}
+            throw HW::DescriptorError("Connection is closed!");
+        }
         size_t total_read = 0;
-		while (total_read != size) {
-			size_t recieved = read(static_cast<uint8_t*>(data) + total_read, size - total_read);
-			if (recieved == 0) {
-				throw HW::IOError("End of file reached before reading required number of bytes!");
-			}
-			total_read += recieved;
-		}
+        while (total_read != size) {
+            size_t recieved = read(static_cast<uint8_t*>(data) + total_read, size - total_read);
+            if (recieved == 0) {
+                throw HW::IOError("End of file reached before reading required number of bytes!");
+            }
+            total_read += recieved;
+        }
     }
 
     size_t Connection::write(const void *data, size_t size) {
         if (!isOpened()) {
-			throw HW::DescriptorError("Connection is closed!");
-		}
+            throw HW::DescriptorError("Connection is closed!");
+        }
         ssize_t written = ::write(m_socket.getFD(), data, size);
-		if (written < 0) {
-			throw HW::IOError("Error writing to process!");
-		}
-		else {
-			return static_cast<size_t>(written);
-		}
+        if (written < 0) {
+            throw HW::IOError("Error writing to process!");
+        }
+        else {
+            return static_cast<size_t>(written);
+        }
     }
 
     void Connection::writeExact(const void *data, size_t size) {
         if (!isOpened()) {
-			throw HW::DescriptorError("Connection is closed!");
-		}
+            throw HW::DescriptorError("Connection is closed!");
+        }
         size_t total_written = 0;
-		while (total_written != size) {
-			total_written += write(static_cast<const uint8_t*>(data) + total_written, size - total_written);
-		}
+        while (total_written != size) {
+            total_written += write(static_cast<const uint8_t*>(data) + total_written, size - total_written);
+        }
     }
 
     void Connection::close() {

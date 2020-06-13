@@ -5,7 +5,7 @@
 #include <list>
 
 struct A {
-	int x;
+    int x;
 };
 
 namespace HW {
@@ -27,10 +27,10 @@ namespace HW {
             m_cacheMap.erase(last.first);
         }
 
-		void insert(Key key, Entry *entry) {
-			pCache newValue = m_cache.insert(m_cache.begin(), { key, entry });
-			m_cacheMap[key] = newValue;
-		}
+        void insert(Key key, Entry *entry) {
+            pCache newValue = m_cache.insert(m_cache.begin(), { key, entry });
+            m_cacheMap[key] = newValue;
+        }
 
     public:
         LRUCache(size_t cacheSize): m_cacheSize{cacheSize} {}
@@ -47,11 +47,11 @@ namespace HW {
         }
 
         void add(Key key, Entry *entry) {
-			remove(key);
+            remove(key);
             if (m_cache.size() >= m_cacheSize) {
                 removeLRU();
             }
-			insert(key, entry);
+            insert(key, entry);
         }
 
         void remove(Key key) {

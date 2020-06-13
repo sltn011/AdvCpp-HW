@@ -26,9 +26,9 @@ namespace HW::HTTP {
     }
 
     std::string HTTPMessage::getHeaders() const {
-		if (m_headers.size() == 0) {
-			return {};
-		}
+        if (m_headers.size() == 0) {
+            return {};
+        }
         std::string res;
         for (auto &line : m_headers) {
             res += (line.first + ": " + line.second);
@@ -70,64 +70,64 @@ namespace HW::HTTP {
         std::string res;
         res += (getHTTPmethod() + " ");
         res += (getRequestTarget() + " ");
-		res += (HW::HTTP::Protocol::HTTP + "/" + getHTTPversion() + "\r\n");
+        res += (HW::HTTP::Protocol::HTTP + "/" + getHTTPversion() + "\r\n");
         res += getHeaders();
         res += "\r\n";
         res += getBody();
         return res;
     }
 
-	void HTTPRequest::fromString(const std::string &str) {
-		size_t begin = 0;
-		size_t end = str.find("\r\n", begin);
-		if (end == std::string::npos) {
+    void HTTPRequest::fromString(const std::string &str) {
+        size_t begin = 0;
+        size_t end = str.find("\r\n", begin);
+        if (end == std::string::npos) {
             throw HW::ArgumentError{ "Invalid string passed!" };
         } 
-		std::string line = str.substr(begin, end - begin);
-		
-		end = line.find(" ", begin);
-		if (end == std::string::npos) {
+        std::string line = str.substr(begin, end - begin);
+        
+        end = line.find(" ", begin);
+        if (end == std::string::npos) {
             throw HW::ArgumentError{ "Method: Invalid string passed!" };
         }
-		setHTTPmethod(line.substr(begin, end - begin));
+        setHTTPmethod(line.substr(begin, end - begin));
 
-		begin = end + 1;
-		end = line.find(" ", begin);
+        begin = end + 1;
+        end = line.find(" ", begin);
         if (end == std::string::npos) {
             throw HW::ArgumentError{ "Target: Invalid string passed!" };
         }
-		setRequestTarget(line.substr(begin, end - begin));
+        setRequestTarget(line.substr(begin, end - begin));
 
-		begin = end + 1;
-		begin = line.find("/", begin);
-		if (begin == std::string::npos) {
+        begin = end + 1;
+        begin = line.find("/", begin);
+        if (begin == std::string::npos) {
             throw HW::ArgumentError{ "Version: Invalid string passed!" };
         }
-		begin += 1;
-		setHTTPversion(line.substr(begin, line.size() - begin));
-		
-		begin = line.size() + 2;
-		end = str.find("\r\n", begin);
+        begin += 1;
+        setHTTPversion(line.substr(begin, line.size() - begin));
+        
+        begin = line.size() + 2;
+        end = str.find("\r\n", begin);
         if (end == std::string::npos) {
             throw HW::ArgumentError{ "Invalid string passed!" };
         }
-		line = str.substr(begin, end - begin);
-		while (line.size() != 0) {
-			size_t p = line.find(": ");
+        line = str.substr(begin, end - begin);
+        while (line.size() != 0) {
+            size_t p = line.find(": ");
             if (p == std::string::npos) {
                 throw HW::ArgumentError{ "Header: Invalid string passed!" };
             }
             addHeaderLine(line.substr(0, p), line.substr(p + 2, line.size()));
-			begin += line.size() + 2;
-			end = str.find("\r\n", begin);
-			if (end == std::string::npos) {
+            begin += line.size() + 2;
+            end = str.find("\r\n", begin);
+            if (end == std::string::npos) {
                 throw HW::ArgumentError{ "Header Info: Invalid string passed!" };
             }
-			line = str.substr(begin, end - begin);
-		}
+            line = str.substr(begin, end - begin);
+        }
 
-		begin += 2;
-		if (m_headers.find(Request::ContentLength) != m_headers.end()) {
+        begin += 2;
+        if (m_headers.find(Request::ContentLength) != m_headers.end()) {
             size_t bodySize = 0;
             sscanf(m_headers[Request::ContentLength].c_str(), "%zd", &bodySize);
             if (str.size() - begin != bodySize) {
@@ -135,7 +135,7 @@ namespace HW::HTTP {
             }
             setBody(str.substr(begin, bodySize));
         }
-	}
+    }
 
     void HTTPRequest::setHTTPmethod(const std::string &method) {
         m_method = method;
@@ -187,53 +187,53 @@ namespace HW::HTTP {
         return res;
     }
 
-	void HTTPResponse::fromString(const std::string &str) {
-		size_t begin = 0;
-		size_t end = str.find("\r\n", begin);
-		if (end == std::string::npos) {
+    void HTTPResponse::fromString(const std::string &str) {
+        size_t begin = 0;
+        size_t end = str.find("\r\n", begin);
+        if (end == std::string::npos) {
             throw HW::ArgumentError{ "Invalid string passed!" };
         }
-		std::string line = str.substr(begin, end - begin);
+        std::string line = str.substr(begin, end - begin);
 
-		begin = line.find("/", begin);
-		if (begin == std::string::npos) {
+        begin = line.find("/", begin);
+        if (begin == std::string::npos) {
             throw HW::ArgumentError{ "Version: Invalid string passed!" };
         }
-		begin += 1;
-		end = line.find(" ");
-		if (end == std::string::npos) {
+        begin += 1;
+        end = line.find(" ");
+        if (end == std::string::npos) {
             throw HW::ArgumentError{ "Version: Invalid string passed!" };
         }
-		setHTTPversion(line.substr(begin, end - begin));
+        setHTTPversion(line.substr(begin, end - begin));
 
-		begin = end + 1;
-		end = line.find(" ", begin);
-		if (end == std::string::npos) {
+        begin = end + 1;
+        end = line.find(" ", begin);
+        if (end == std::string::npos) {
             throw HW::ArgumentError{ "Status Code: Invalid string passed!" };
         }
-		setStatusCode(static_cast<StatusCode>(std::stoi(line.substr(begin, end - begin))));
+        setStatusCode(static_cast<StatusCode>(std::stoi(line.substr(begin, end - begin))));
 
-		begin = line.size() + 2;
-		end = str.find("\r\n", begin);
-		if (end == std::string::npos) {
+        begin = line.size() + 2;
+        end = str.find("\r\n", begin);
+        if (end == std::string::npos) {
             throw HW::ArgumentError{ "Invalid string passed!" };
         }
-		line = str.substr(begin, end - begin);
-		while (line.size() != 0) {
-			size_t p = line.find(": ");
+        line = str.substr(begin, end - begin);
+        while (line.size() != 0) {
+            size_t p = line.find(": ");
             if (p == std::string::npos) {
                 throw HW::ArgumentError{ "Header: Invalid string passed!" };
             }
             addHeaderLine(line.substr(0, p), line.substr(p + 2, line.size()));
-			begin += line.size() + 2;
-			end = str.find("\r\n", begin);
-			if (end == std::string::npos) {
+            begin += line.size() + 2;
+            end = str.find("\r\n", begin);
+            if (end == std::string::npos) {
                 throw HW::ArgumentError{ "Header Data: Invalid string passed!" };
             }
-			line = str.substr(begin, end - begin);
-		}
+            line = str.substr(begin, end - begin);
+        }
 
-		begin += 2;
+        begin += 2;
         if (m_headers.find(Response::ContentLength) != m_headers.end()) {
             size_t bodySize = 0;
             sscanf(m_headers[Response::ContentLength].c_str(), "%zd", &bodySize);
@@ -242,7 +242,7 @@ namespace HW::HTTP {
             }
             setBody(str.substr(begin, bodySize));
         }
-	}
+    }
 
     void HTTPResponse::setStatusCode(const StatusCode code) {
         m_statusCode = code;

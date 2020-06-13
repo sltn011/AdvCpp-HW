@@ -190,7 +190,7 @@ namespace HW {
         }
 
         void BaseHTTPServer::ThreadWork::dropTimeoutedConnections() {
-			trace("Dropping timeouted connections");
+            trace("Dropping timeouted connections");
             for (auto i = m_idleTime.begin(); i != m_idleTime.end(); ++i) {
                 Timeout timeDiff = std::chrono::duration_cast<Timeout>(std::chrono::system_clock::now() - i->first);
                 if (timeDiff > m_pServer->m_timeout) {
@@ -238,7 +238,7 @@ namespace HW {
                     if (!m_epoll.isOpened()) {
                         return;
                     }
-					dropTimeoutedConnections();
+                    dropTimeoutedConnections();
                     int numFDs = epoll_wait(m_epoll.getFD(), m_events.data(), m_epollsize, epollTimeout);
                     if (numFDs == 0) {
                         continue;

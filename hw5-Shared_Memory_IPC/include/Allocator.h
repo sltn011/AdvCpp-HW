@@ -43,7 +43,7 @@ namespace HW {
 
         template<class Type>
         struct allocator{
-			using value_type = Type;
+            using value_type = Type;
 
             AllocState *m_state;
 
@@ -56,7 +56,7 @@ namespace HW {
                 }
                 uint8_t *begin = m_state->m_freeMemBegin;
                 m_state->m_freeMemBegin += (sizeof(Type) * n);
-			    return reinterpret_cast<Type*>(begin);
+                return reinterpret_cast<Type*>(begin);
             }
 
             void deallocate(Type *p, std::size_t n) {
@@ -65,15 +65,15 @@ namespace HW {
                 }
             }
 
-			template<class NewType>
-			allocator(const allocator<NewType> &rhs)
+            template<class NewType>
+            allocator(const allocator<NewType> &rhs)
             : m_state{rhs.m_state} {}
 
-			template<class NewType>
-			allocator &operator=(const allocator<NewType> &rhs) {
-				m_state = rhs.m_state;
-				return *this;
-			}
+            template<class NewType>
+            allocator &operator=(const allocator<NewType> &rhs) {
+                m_state = rhs.m_state;
+                return *this;
+            }
 
             template<class OtherType>
             bool operator==(const allocator<OtherType> &rhs) {
@@ -85,7 +85,7 @@ namespace HW {
                 return (*m_state != *rhs.m_state);
             }
 
-			~allocator() = default;
+            ~allocator() = default;
 
         };
 

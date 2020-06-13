@@ -16,11 +16,11 @@ namespace HW {
         const char *what() const noexcept override;
     };
 
-	class ArgumentError : public BaseException
-	{
-	public:
-		ArgumentError(const std::string &info);
-	};
+    class ArgumentError : public BaseException
+    {
+    public:
+        ArgumentError(const std::string &info);
+    };
 
     class DescriptorError : public BaseException 
     {
