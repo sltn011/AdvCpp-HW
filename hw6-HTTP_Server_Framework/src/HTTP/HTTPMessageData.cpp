@@ -1,4 +1,4 @@
-#include "HTTP/HTTPMessageData.h"
+#include "HTTP/HTTPMessageData.hpp"
 
 std::string HW::HTTP::getCodeMessage(const StatusCode code) {
     switch (code) {

@@ -1,4 +1,4 @@
-#include "exceptions/Exceptions.h"
+#include "exceptions/Exceptions.hpp"
 
 namespace HW {
 

@@ -1,4 +1,4 @@
-#include "SharedMemory.h"
+#include "SharedMemory.hpp"
 
 namespace HW {
 

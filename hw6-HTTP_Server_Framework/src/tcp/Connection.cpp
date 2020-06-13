@@ -1,4 +1,4 @@
-#include "tcp/Connection.h"
+#include "tcp/Connection.hpp"
 
 namespace HW {
 

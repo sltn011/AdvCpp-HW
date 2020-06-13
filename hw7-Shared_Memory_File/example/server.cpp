@@ -1,6 +1,6 @@
-#include "HTTP/BaseHTTPServer.h"
-#include "bigFile/Reader.h"
-#include "bigFile/FileEntry.h"
+#include "HTTP/BaseHTTPServer.hpp"
+#include "bigFile/Reader.hpp"
+#include "bigFile/FileEntry.hpp"
 #include <cstring>
 
 using namespace HW::HTTP;

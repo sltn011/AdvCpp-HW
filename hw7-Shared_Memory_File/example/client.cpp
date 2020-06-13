@@ -1,6 +1,6 @@
-#include "tcp/Connection.h"
-#include "HTTP/HTTPMessage.h"
-#include "bigFile/FileEntry.h"
+#include "tcp/Connection.hpp"
+#include "HTTP/HTTPMessage.hpp"
+#include "bigFile/FileEntry.hpp"
 #include <iostream>
 #include <cstring>
 

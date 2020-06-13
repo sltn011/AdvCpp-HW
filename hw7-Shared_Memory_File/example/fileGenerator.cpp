@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include <string_view>
 #include <cstring>
-#include "bigFile/FileEntry.h"
+#include "bigFile/FileEntry.hpp"
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {

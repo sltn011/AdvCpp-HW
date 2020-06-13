@@ -1,4 +1,4 @@
-#include "Connection.h"
+#include "Connection.hpp"
 
 namespace HW {
 
