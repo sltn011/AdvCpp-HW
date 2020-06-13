@@ -54,8 +54,9 @@ Classes are made for use on OS Linux
 // TODO: Replace coroutines with std coroutines after C++20 release  
   
 # hw7-Shared_Memory_File
-Class HW::File::Reader that can memory map big binary files filled with Entries { uint64_t key; Data data; }  
-Reader can quickly give pointer to Entry with requested key  
-Reader contains LRU Cache to access cached Entries at O(1)  
+Classes HW::File::Reader and HW::File::LRUCacheReader that can memory map big binary files filled with  
+Entries { uint64_t key; Data data; }  
+Readers can quickly give pointer to Entry in file with requested key  
+LRUCacheReader contains LRU Cache to access cached Entries at O(1)  
 Classes guarantee Exception safety and uses RAII idiom  
 Classes are made for use on OS Linux  
