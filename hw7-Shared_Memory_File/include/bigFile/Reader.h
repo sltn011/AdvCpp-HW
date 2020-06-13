@@ -3,8 +3,6 @@
 
 #include "bigFile/Mmap.h"
 #include "data/LRUCache.h"
-#include <unordered_map>
-#include <cstring>
 
 namespace HW::File{
 
@@ -12,13 +10,9 @@ namespace HW::File{
     class Reader {
     public:
         using Key = uint64_t;
-        using EntryPos = typename std::map<Key, Entry*>;
         
-    private:
+    protected:
         Mmap m_mmap;
-        EntryPos m_entryPos;
-        uint64_t m_blockSize;
-        LRUCache<Entry> m_cache;
 
         Entry *binSearchEntry(Entry* l, Entry* r, Key key) {
             while (l <= r) {
@@ -38,43 +32,37 @@ namespace HW::File{
         }
 
     public:
-        Reader(std::string &path, uint64_t blockSize, size_t cacheSize, bool isFileShared)
-        : m_mmap{path, isFileShared}
-        , m_cache{cacheSize} {
-            m_blockSize = (m_mmap.getSize()/sizeof(Entry) > blockSize) ? blockSize : m_mmap.getSize()/sizeof(Entry);
-            uint64_t numEntries = static_cast<uint64_t>(m_mmap.getSize())/sizeof(Entry);
-            Entry *data = static_cast<Entry*>(m_mmap.getData());
-            for(uint64_t i = 0; i < numEntries; i += m_blockSize) {
-                Key entryKey = *((Key*)(data + i));
-                m_entryPos.emplace_hint(m_entryPos.end(), entryKey, data + i);
-            }
-        }
+        Reader(std::string &path, bool isFileShared)
+        : m_mmap{path, isFileShared} {}
 
-        Entry* getEntry(const Key key) {
+        virtual Entry* getEntry(const Key key) {
+            return binSearchEntry((Entry*)m_mmap.getData(), (Entry*)m_mmap.end(), key);
+        }
+    };
+
+    template<class Entry>
+    class LRUCacheReader : public Reader<Entry> {
+    public:
+        using Key = typename Reader<Entry>::Key;
+       
+    private:
+        LRUCache<Entry> m_cache;
+
+    public:
+        LRUCacheReader(std::string &path, bool isFileShared, size_t cacheSize)
+        : Reader<Entry>{path, isFileShared}
+        , m_cache{cacheSize} {}
+
+        Entry* getEntry(const Key key) override {
             Entry *cached = m_cache.get(key);
             if (cached) {
-                std::cout << "Got " << key << " from cache" << std::endl;
                 return cached;
             }
-            for (auto i = m_entryPos.rbegin(); i != m_entryPos.rend(); ++i) {
-                if (i->first <= key) {
-                    size_t elementsInBlock;
-                    if (*i != *m_entryPos.rbegin()) {
-                        elementsInBlock = m_blockSize;
-                    }
-                    else {
-                        elementsInBlock = static_cast<Entry*>(m_mmap.end()) - i->second;
-                        std::cout << elementsInBlock << std::endl;
-                    }
-                    Entry *fromFile = binSearchEntry(i->second, i->second + elementsInBlock, key);
-                    if (fromFile) {
-                        std::cout << "Adding " << key << " to cache" << std::endl;
-                        m_cache.add(key, fromFile);
-                    }
-                    return fromFile;
-                }
+            Entry *fromFile = this->binSearchEntry((Entry*)this->m_mmap.getData(), (Entry*)this->m_mmap.end(), key);
+            if (fromFile) {
+                m_cache.add(key, fromFile);
             }
-            return nullptr;
+            return fromFile;
         }
     };
 
