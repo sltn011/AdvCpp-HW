@@ -1,4 +1,11 @@
-# AdvCpp Mail.ru Courses Homework, Spring 2020
+# AdvCpp Mail.ru Courses Homework, Spring 2020  
+  
+Repository contains homework projects from Mail.ru Advanced C++ Technopark courses from spring 2020.  
+Most of the projects are made for OS Linux.  
+Each project provides static libraries you can compile and use in your own code.
+  
+Description of each project provided below. Compilation instruction is provided below.  
+Every project has an example/ folder with showcase of how each part works 
   
 # hw1-Process
 Class HW::Process - wrapper for syscalls fork and exec for executing files  
@@ -39,15 +46,31 @@ Server uses non-blocking connections and works on multithreaded epoll. Server is
 Each working thread works with its own epoll. Each connection is handled by it's own coroutine  
 If provided with timeout value in seconds, server can drop idle connections after accepted connection doesn't act for specified time  
   
-For setting server up:  
-    1) Create server class that inherits BaseHTTPServer  
-    2) Pass number of working threads to BaseHTTPServer constructor  
-    3) Overload HTTPResponse BaseHTTPServer::onRequest(const HTTPRequest &r) (namespace HW::HTTP::)  
-    4) Create your server object  
-    5) Call open method of your server with IPv4 address and port number parameters.  
-    6) Set server socket to listening state with listen method and size of pending connections queue  
-    7) Call run method of server with epoll timeout parameter in milliseconds  
-  
+```c++
+#include "HTTP/BaseHTTPServer.hpp"
+
+using namespace HW::HTTP;
+
+class Server : public BaseHTTPServer {
+public:
+    Server(size_t numThreads) 
+    : BaseHTTPServer{numThreads} {}
+    
+    HTTPResponse onRequest(const HTTPRequest &r) {
+        ... handle request and create response ...
+        return HTTPResponse{};
+    }
+};
+
+int main() {
+    // Can be used for logging - HW::Logger::get_instance().set_global_logger(HW::create_stderr_logger(HW::Level::ALL));
+    Server s(4);               // Create server with 4 working threads
+    s.open("127.1.1.1", 8888); // Opens server with address 127.1.1.1:8888
+    s.listen(1000);            // Server can now accept clients (queue size is set to 1000)
+    s.run(5000);               // Server is running (epoll wait timeout is set to 5 seconds)
+    return 0;
+}
+```
 Server uses singleton logger from hw2  
 Classes guarantee Exception safety and uses RAII idiom  
 Classes are made for use on OS Linux  
@@ -60,3 +83,19 @@ Readers can quickly give pointer to Entry in file with requested key
 LRUCacheReader contains LRU Cache to access cached Entries at O(1)  
 Classes guarantee Exception safety and uses RAII idiom  
 Classes are made for use on OS Linux  
+  
+# Installation and compiling
+```
+# Clone repo to your PC
+git clone https://github.com/sltn011/AdvCpp-HW.git  
+cd AdvCpp-HW/
+
+# Choose wanted project folder
+cd hw../
+
+# Create Makefile with CMake
+cmake CMakeLists.txt
+
+# Compile libraries and executables
+make
+```
