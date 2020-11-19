@@ -20,10 +20,10 @@ int main(int argc, char *argv[]) {
     HW::Connection c;
     c.connect("127.1.1.1", 8888);
     std::string msg = req.toString();
-    c.writeExact(msg.data(), msg.size());
+    c.write(msg.data(), msg.size());
 
     std::string answer(answerSize, '\0');
-    c.read(answer.data(), answer.size());
+    c.readExact(answer.data(), answer.size());
 
     HW::File::Key key;
     memcpy(&key, answer.data(), sizeof(HW::File::Key));

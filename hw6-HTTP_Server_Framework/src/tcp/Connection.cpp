@@ -2,22 +2,29 @@
 
 namespace HW {
 
-    Connection::Connection() {}
+    Connection::Connection() : m_opened{false} {}
 
-    Connection::Connection(const int fd, Address &dst, Address &src)
-    : m_socket{fd}, m_dst_addr{dst}, m_src_addr{src} {}
+    Connection::Connection(const int fd) : m_socket{fd}, m_opened{true} {}
+
+    int Connection::getFD() const {
+        return m_socket.getFD();
+    }
 
     size_t Connection::read(void *data, size_t size) {
         if (!isOpened()) {
             throw HW::DescriptorError("Connection is closed!");
         }
         ssize_t recieved = ::read(m_socket.getFD(), data, size);
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return (recieved > 0) ? recieved : 0;
+        }
         if (recieved < 0) {
             throw HW::IOError("Error reading from process!");
         }
-        else {
-            return static_cast<size_t>(recieved);
+        else if (recieved == 0) {
+            m_opened = false;
         }
+        return static_cast<size_t>(recieved);
     }
 
     void Connection::readExact(void *data, size_t size) {
@@ -34,11 +41,32 @@ namespace HW {
         }
     }
 
+    size_t Connection::readToBuffer(size_t size) {
+        if (!isOpened()) {
+            throw HW::DescriptorError("Connection is closed!");
+        }
+        size_t old_size = m_buffer.size();
+        m_buffer.resize(old_size + size);
+        size_t recieved = 0;
+        try {
+            recieved = read(m_buffer.data() + old_size, size);
+        }
+        catch(BaseException &e) {
+            m_buffer.resize(old_size);
+            throw;
+        }
+        m_buffer.resize(old_size + recieved);
+        return recieved;
+    }
+
     size_t Connection::write(const void *data, size_t size) {
         if (!isOpened()) {
             throw HW::DescriptorError("Connection is closed!");
         }
         ssize_t written = ::write(m_socket.getFD(), data, size);
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return (written > 0) ? written : 0;
+        }
         if (written < 0) {
             throw HW::IOError("Error writing to process!");
         }
@@ -62,26 +90,23 @@ namespace HW {
             return;
         }
         m_socket.close();
-        m_src_addr.first.clear();
-        m_src_addr.second = 0;
-        m_dst_addr.first.clear();
-        m_dst_addr.second = 0;
+        m_opened = false;
     }
 
     bool Connection::isOpened() const {
-        return !m_src_addr.first.empty();
+        return m_opened;
     }
 
     void Connection::setTimeout(int seconds, int optname) {
         if (!m_socket.isOpened()) {
             return;
         }
-        timeval timeout{seconds, 0};
+        timeval timeout{ seconds, 0 };
         if (setsockopt(m_socket.getFD(),
-                        SOL_SOCKET,
-                        optname,
-                        &timeout,
-                        sizeof(timeout)) < 0) 
+            SOL_SOCKET,
+            optname,
+            &timeout,
+            sizeof(timeout)) < 0)
         {
             throw HW::NetworkError("Error setting timeout!");
         }
@@ -111,22 +136,33 @@ namespace HW {
         if (::connect(m_socket.getFD(), reinterpret_cast<sockaddr*>(&sock_addr), sizeof(sock_addr)) < 0) {
             throw HW::NetworkError("Error connecting to " + ip + " " + std::to_string(port));
         }
-        m_src_addr = std::make_pair(ip, port);
+        m_opened = true;
+    }
 
+    Buffer &Connection::getBuffer() {
+        return m_buffer;
+    }
+
+    void Connection::clearBuffer() {
+        m_buffer.clear();
+    }
+
+    Address Connection::getDstAddr() const {
         sockaddr_in dst_addr{};
         socklen_t dst_addr_size = sizeof(dst_addr);
         getsockname(m_socket.getFD(), reinterpret_cast<sockaddr*>(&dst_addr), &dst_addr_size);
         std::string dst_ip(inet_ntoa(dst_addr.sin_addr));
         uint16_t dst_port = ntohs(dst_addr.sin_port);
-        m_dst_addr = std::make_pair(dst_ip, dst_port);
+        return std::make_pair(dst_ip, dst_port);
     }
 
-    Address Connection::getDstAddr() const {
-        return m_dst_addr;
-    }
-        
     Address Connection::getSrcAddr() const {
-        return m_src_addr;
+        sockaddr_in src_addr{};
+        socklen_t src_addr_size = sizeof(src_addr);
+        getpeername(m_socket.getFD(), reinterpret_cast<sockaddr*>(&src_addr), &src_addr_size);
+        std::string src_ip(inet_ntoa(src_addr.sin_addr));
+        uint16_t src_port = ntohs(src_addr.sin_port);
+        return std::make_pair(src_ip, src_port);
     }
 
 } // HW

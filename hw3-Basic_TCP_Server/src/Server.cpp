@@ -28,12 +28,7 @@ namespace HW {
         if (client_fd < 0) {
             throw HW::NetworkError("Error accepting connection!");
         }
-        std::string client_ip(inet_ntoa(client_addr.sin_addr));
-        uint16_t client_port = ntohs(client_addr.sin_port);
-
-        Address client = std::make_pair(client_ip, client_port);
-        Address server = m_addr;
-        return Connection(client_fd, client, server);
+        return Connection(client_fd);
     }
 
     bool Server::isOpened() const {
